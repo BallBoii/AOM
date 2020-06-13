@@ -7,7 +7,7 @@ from . import ExpThread
 
 
 class Confocal(ExpThread.ExpThread):
-
+    '''MODIFIED TO USE ANALOG SIGNAL FROM PHOTODIODE INSTEAD'''
     # Define signals for communicating with mainexp
     signal_confocal_grab_screenshots = pyqtSignal()
 
@@ -19,6 +19,7 @@ class Confocal(ExpThread.ExpThread):
 
         # Make references to the main DAQmx Channels
         self.galpie = mainexp.galpie
+        self.ai0 = mainexp.ai0
         self.ctrapd = mainexp.ctrapd
         self.ctrclk = mainexp.ctrclk
         self.ctrtrig = mainexp.ctrtrig
@@ -49,11 +50,12 @@ class Confocal(ExpThread.ExpThread):
         self.plane_coef = [0, 0, 1, 5]  # coefficients for Ax + By + Cz = D for autoZ
 
     def setup_ctr(self):
-        self.ctrapd.reset()
+        # self.ctrapd.reset()
         self.ctrclk.reset()
         self.ctrtrig.set_time(0.001)
         self.ctrtrig.reset()
         self.galpie.reset()
+        self.ai0.reset()
 
         self.galpie.set_sample_clock(self.mainexp.inst_params['instruments']['ctrclk']['addr_out'],
                                      PyDAQmx.DAQmx_Val_Rising,
@@ -61,23 +63,30 @@ class Confocal(ExpThread.ExpThread):
         self.galpie.set_start_trigger(self.mainexp.inst_params['instruments']['ctrtrig']['addr_out'],
                                       PyDAQmx.DAQmx_Val_Rising)
 
-        # create a self.ctrapd running on clock from self.ctrclk and wait for trigger from self.ctrtrig
-        self.ctrapd.set_sample_clock(self.mainexp.inst_params['instruments']['ctrclk']['addr_out'],
+        self.ai0.set_sample_clock(self.mainexp.inst_params['instruments']['ctrclk']['addr_out'],
                                      PyDAQmx.DAQmx_Val_Rising,
                                      len(self.var1) + 1)
-        self.ctrapd.set_arm_start_trigger(self.mainexp.inst_params['instruments']['ctrtrig']['addr_out'],
-                                          PyDAQmx.DAQmx_Val_Rising)
+
+        self.ai0.set_start_trigger(self.mainexp.inst_params['instruments']['ctrtrig']['addr_out'],
+                                      PyDAQmx.DAQmx_Val_Rising)
+        # # create a self.ctrapd running on clock from self.ctrclk and wait for trigger from self.ctrtrig
+        # self.ctrapd.set_sample_clock(self.mainexp.inst_params['instruments']['ctrclk']['addr_out'],
+        #                              PyDAQmx.DAQmx_Val_Rising,
+        #                              len(self.var1) + 1)
+        # self.ctrapd.set_arm_start_trigger(self.mainexp.inst_params['instruments']['ctrtrig']['addr_out'],
+        #                                   PyDAQmx.DAQmx_Val_Rising)
 
         # creates a clock using pulses on self.ctrclk (output to PFI7)
         self.ctrclk.set_freq(1/self.acqtime)
         self.ctrclk.start()
 
     def setup_ctr_2d(self):
-        self.ctrapd.reset()
+        # self.ctrapd.reset()
         self.ctrclk.reset()
         self.ctrtrig.set_time(0.001)
         self.ctrtrig.reset()
         self.galpie.reset()
+        self.ai0.reset()
 
         self.galpie.set_sample_clock(self.mainexp.inst_params['instruments']['ctrclk']['addr_out'],
                                      PyDAQmx.DAQmx_Val_Rising,
@@ -85,12 +94,19 @@ class Confocal(ExpThread.ExpThread):
         self.galpie.set_start_trigger(self.mainexp.inst_params['instruments']['ctrtrig']['addr_out'],
                                       PyDAQmx.DAQmx_Val_Rising)
 
-        # create a self.ctrapd running on clock from self.ctrclk and wait for trigger from self.ctrtrig
-        self.ctrapd.set_sample_clock(self.mainexp.inst_params['instruments']['ctrclk']['addr_out'],
+        self.ai0.set_sample_clock(self.mainexp.inst_params['instruments']['ctrclk']['addr_out'],
                                      PyDAQmx.DAQmx_Val_Rising,
                                      len(self.var1)*len(self.var2) + 1)
-        self.ctrapd.set_arm_start_trigger(self.mainexp.inst_params['instruments']['ctrtrig']['addr_out'],
-                                          PyDAQmx.DAQmx_Val_Rising)
+
+        self.ai0.set_start_trigger(self.mainexp.inst_params['instruments']['ctrtrig']['addr_out'],
+                                      PyDAQmx.DAQmx_Val_Rising)
+
+        # # create a self.ctrapd running on clock from self.ctrclk and wait for trigger from self.ctrtrig
+        # self.ctrapd.set_sample_clock(self.mainexp.inst_params['instruments']['ctrclk']['addr_out'],
+        #                              PyDAQmx.DAQmx_Val_Rising,
+        #                              len(self.var1)*len(self.var2) + 1)
+        # self.ctrapd.set_arm_start_trigger(self.mainexp.inst_params['instruments']['ctrtrig']['addr_out'],
+        #                                   PyDAQmx.DAQmx_Val_Rising)
 
         # creates a clock using pulses on self.ctrclk (output to PFI7)
         self.ctrclk.set_freq(1/self.acqtime)
@@ -200,19 +216,25 @@ class Confocal(ExpThread.ExpThread):
                                   [xlist.tolist(), ylist.tolist(), zlist.tolist()])
         # set arm start on the tasks that are hardware-timed so they are ready to be triggered
         self.galpie.start()
-        self.ctrapd.start()
+        self.ai0.start()
+        # self.ctrapd.start()
 
         self.ctrtrig.start()
         self.ctrtrig.wait_until_done()
         self.ctrtrig.stop()
 
-        ctr_raw = self.ctrapd.get_counts(numpnts + 1)
-        ctr_read = np.diff(ctr_raw) / acqtime
+        readarray = self.ai0.get_voltages(numpnts + 1)
+        ctr_read = readarray[1:]
+
+        # ctr_raw = self.ctrapd.get_counts(numpnts + 1)
+        # ctr_read = np.diff(ctr_raw) / acqtime
 
         self.galpie.wait_until_done()
-        self.ctrapd.wait_until_done()
+        self.ai0.wait_until_done()
+        # self.ctrapd.wait_until_done()
         self.galpie.stop()
-        self.ctrapd.stop()
+        self.ai0.stop()
+        # self.ctrapd.stop()
 
         return list(ctr_read)
 
@@ -348,7 +370,8 @@ class Confocal(ExpThread.ExpThread):
 
             # set arm start on the tasks that are hardware-timed so they are ready to be triggered
             self.galpie.start()
-            self.ctrapd.start()
+            self.ai0.start()
+            # self.ctrapd.start()
             self.ctrtrig.start()
             self.ctrtrig.wait_until_done()
             self.ctrtrig.stop()
@@ -358,15 +381,18 @@ class Confocal(ExpThread.ExpThread):
             numpnts1 = len(self.var1)
             numpnts2 = len(self.var2)
 
-            last_counter = self.mainexp.ctrapd.get_counts(1)[0]
+            self.ai0.get_voltages(1)[0]
+            # last_counter = self.mainexp.ctrapd.get_counts(1)[0]
 
             for index_y in range(numpnts2):
                 if not self.cancel:
                     # This will wait until the entire row is read
-                    ctr_raw = self.mainexp.ctrapd.get_counts(numpnts1)
-                    ctr_diff = np.diff(np.append([last_counter], ctr_raw)) / self.acqtime
+                    ctr_diff = self.ai0.get_voltages(numpnts1)
 
-                    last_counter = ctr_raw[-1]
+                    # ctr_raw = self.mainexp.ctrapd.get_counts(numpnts1)
+                    # ctr_diff = np.diff(np.append([last_counter], ctr_raw)) / self.acqtime
+
+                    # last_counter = ctr_raw[-1]
 
                     # Forward meander scan (increasing yvals)
                     if not rev:
@@ -392,11 +418,12 @@ class Confocal(ExpThread.ExpThread):
                     self.mainexp.ctrclk.stop()
                     self.mainexp.ctrclk.reset()
                     try:
-                        self.mainexp.ctrapd.stop()
+                        self.ai0.stop()
+                        # self.mainexp.ctrapd.stop()
                     except PyDAQmx.DAQmxFunctions.DAQError:
                         # It is normal for the PyDAQmx to throw an error when stopped prematurely
                         pass
-                    self.mainexp.ctrapd.reset()
+                    self.ai0.reset()
 
             if self.isRunning():
                 self.wait_for_mainexp()
@@ -407,7 +434,8 @@ class Confocal(ExpThread.ExpThread):
 
         # stop nidaq tasks if they haven't already
         self.mainexp.galpie.reset()
-        self.mainexp.ctrapd.reset()
+        self.mainexp.ai0.reset()
+        # self.mainexp.ctrapd.reset()
         self.mainexp.ctrclk.reset()
         self.mainexp.ctrtrig.reset()
 

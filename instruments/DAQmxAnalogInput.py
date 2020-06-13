@@ -19,6 +19,10 @@ class DAQmxAnalogInput(DAQmxChannel.DAQmxChannel):
         super().create_task()
         pydaqmx.DAQmxCreateAIVoltageChan(self.th, self.dev, '', pydaqmx.DAQmx_Val_Diff, minval, maxval, pydaqmx.DAQmx_Val_Volts, '')
 
+    def get_voltage(self):
+        readarray = self.get_voltages(1)
+        return readarray[0]
+
     def get_voltages(self, n):
         read = ctypes.c_int32()
         readarray = np.zeros((self.numchan*n,), dtype=np.float64)

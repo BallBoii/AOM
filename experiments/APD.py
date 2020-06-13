@@ -25,13 +25,15 @@ class LiveAPD(ExpThread.ExpThread):
         self.signal_liveapd_updateplots.emit(acqtime, pl)
 
     def get_countrate(self, acqtime):
-        self.mainexp.ctrapd.start()
+        # fixme: This is stupid for ai, but it will work
+        # self.mainexp.ctrapd.start()
         self.mainexp.ctrtrig.set_time(acqtime)
         self.mainexp.ctrtrig.start()
         self.mainexp.ctrtrig.wait_until_done()
         self.mainexp.ctrtrig.stop()
-        val = self.mainexp.ctrapd.get_count() / acqtime
-        self.mainexp.ctrapd.stop()
+        # val = self.mainexp.ctrapd.get_count() / acqtime
+        # self.mainexp.ctrapd.stop()
+        val = self.mainexp.ai0.get_voltage()
 
         return val
 
@@ -44,16 +46,18 @@ class LiveAPD(ExpThread.ExpThread):
         self.mainexp.btn_nvlist_add.setEnabled(True)
         self.mainexp.btn_seqapd_start.setEnabled(False)
 
-        self.mainexp.ctrapd.reset()
+        self.mainexp.ai0.reset()
+        # self.mainexp.ctrapd.reset()
         self.mainexp.ctrtrig.reset()
-        self.mainexp.ctrapd.set_pause_trigger(self.mainexp.inst_params['instruments']['ctrtrig']['addr_out'])
+        # self.mainexp.ctrapd.set_pause_trigger(self.mainexp.inst_params['instruments']['ctrtrig']['addr_out'])
 
         self.cancel = False
         while not self.cancel:
             self.update()
 
         self.mainexp.galpie.reset()
-        self.mainexp.ctrapd.reset()
+        self.mainexp.ai0.reset()
+        # self.mainexp.ctrapd.reset()
         self.mainexp.ctrclk.reset()
         self.mainexp.ctrtrig.reset()
 
