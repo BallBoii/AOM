@@ -21,6 +21,8 @@ class DAQmxChannel:
         self.isTimed = False
         self.read_all_samples = False
 
+        self.grouping_mode = pydaqmx.DAQmx_Val_GroupByChannel
+
     def create_task(self):
 
         self.th = pydaqmx.TaskHandle()
@@ -37,13 +39,20 @@ class DAQmxChannel:
 
         self.isTimed = True
 
+    def set_int_clock(self, rate, n):
+        if n < self.cont_buffer_size:
+            pydaqmx.DAQmxCfgSampClkTiming(self.th, 'OnboardClock', rate, pydaqmx.DAQmx_Val_Rising, pydaqmx.DAQmx_Val_FiniteSamps, n)
+        else:  # Use continuous sampling
+            pydaqmx.DAQmxCfgSampClkTiming(self.th, 'OnboardClock', rate, pydaqmx.DAQmx_Val_Rising, pydaqmx.DAQmx_Val_ContSamps, self.cont_buffer_size)
+        self.isTimed = True
+
     def set_n_sample(self, n):
         if self.clock_src == '':
             print('No Clock Src Assigned')
         else:
             self.setSampleClock(self.clock_src, self.clock_edge, n)
 
-    def set_read_all_samples(self, b):
+    def set_read_all_samples(self, b):  # This should be named something more like read_only_available_samples
         pydaqmx.DAQmxSetReadReadAllAvailSamp(self.th, b)
         self.read_all_samples = b
 
