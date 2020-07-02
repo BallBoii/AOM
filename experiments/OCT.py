@@ -15,7 +15,7 @@ class OCT(QThread):
 
     signal_oct_grab_screenshots = pyqtSignal()
     signal_oct_initplot = pyqtSignal()
-    signal_oct_updateplot = pyqtSignal(int)
+    signal_oct_updateplot = pyqtSignal()
 
     def __init__(self, mainexp, wait_condition=None):
         QThread.__init__(self)
@@ -26,6 +26,7 @@ class OCT(QThread):
             self.signal_wait_for_mainexp.connect(wait_condition.wakeAll)
 
         self.signal_oct_initplot.connect(mainexp.oct_initplot)
+        self.signal_oct_updateplot.connect(mainexp.oct_updateplot)
 
         self.cancel = False
 
@@ -41,6 +42,14 @@ class OCT(QThread):
         self.cancel = False
 
         self.signal_oct_initplot.emit()
+
+        t_sleep = self.mainexp.dbl_confocal_acqtime.value()
+        n_steps = self.mainexp.int_confocal_y_numdivs.value()
+
+        for i in range(n_steps):
+            if not self.cancel:
+                time.sleep(t_sleep)
+                self.signal_oct_updateplot.emit()
         print('Success')
         # self.prep_mainexp()
         # self.update()

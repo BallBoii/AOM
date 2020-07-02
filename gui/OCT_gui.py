@@ -62,7 +62,7 @@ class MainExp_GUI(QtWidgets.QMainWindow, mainwindow.Ui_MainWindow):
         colors = np.array([[0, 0, 0, 1], [1, 0, 0, 1], [1, 1, 0, 1.0]])
         cm = pg.ColorMap([0, 0.5, 1], colors)
 
-        '''CONFOCAL PLOTS'''
+        '''MAIN PLOTS'''
         self.glw_confocal = pg.GraphicsLayoutWidget()
         self.glw_confocal.addItem(self.plt_confocal, 0, 0)
         self.hlw_confocal = mainexp_widgets.CustomLUTWidget(image=self.qtimg_confocal)
@@ -72,11 +72,25 @@ class MainExp_GUI(QtWidgets.QMainWindow, mainwindow.Ui_MainWindow):
         self.grid_confocal.addWidget(self.hlw_confocal, 0, 1)
 
 
+        '''OCT SPECTRUM & FFT'''
+        self.plt_oct_spectrum = self.glw_tracker.addPlot(0, 0)
+        self.plt_oct_spectrum.setLabels(left='y axis name', bottom='x axis name')
+        self.plt_oct_fft = self.glw_tracker.addPlot(1, 0)
+        self.plt_oct_fft.setLabels(left='y axis name', bottom='x axis name')
 
+        self.curve_oct_spectrum = self.plt_oct_spectrum.plot([], [], pen='r')
+        self.curve_oct_fft = self.plt_oct_fft.plot([], [], pen='r')
 
         self.exp_oct = exp.OCT.OCT(self)
 
-        self.btn_confocal_start.clicked.connect(self.exp_oct.start)
+        self.btn_confocal_start.clicked.connect(self.oct_start)
+        self.btn_confocal_stop.clicked.connect(self.oct_stop)
+
+    def oct_start(self):
+        self.exp_oct.start()
+
+    def oct_stop(self):
+        self.exp_oct.cancel = True
 
     def oct_initplot(self):
         start_x = 0
@@ -85,7 +99,7 @@ class MainExp_GUI(QtWidgets.QMainWindow, mainwindow.Ui_MainWindow):
         stop_y = 1
 
         # self.qtimg_confocal.setImage(self.confocal_pl[:, :, 0])
-        self.qtimg_confocal.setImage(np.random.rand(10,10))
+        self.qtimg_confocal.setImage(np.random.rand(10, 10))
         # self.hlw_confocal.setImageItem(self.qtimg_confocal)
 
         for name in ['confocal']:
@@ -98,6 +112,21 @@ class MainExp_GUI(QtWidgets.QMainWindow, mainwindow.Ui_MainWindow):
 
         self.plt_confocal.setLabels(bottom='xpos (&mu;m)', left='ypos (&mu;m)')
 
+    def oct_updateplot(self):
+        with warnings.catch_warnings():
+            warnings.simplefilter('ignore', RuntimeWarning)  # for ignoring warnings when plotting NaNs
+
+            self.qtimg_confocal.setImage(np.random.rand(10, 10))
+
+            xvals = np.linspace(0, 2000, 2001)
+            yvals = np.sin((2*np.pi/2000)*10*np.random.normal(10)*xvals)
+
+            fft_x = np.linspace(0, 1/(xvals[1]-xvals[0]), 2001)
+            fft_y = np.abs(np.fft.fft(yvals))
+
+            self.curve_oct_spectrum.setData(xvals, yvals)
+            self.curve_oct_fft.setData(fft_x, fft_y)
+            processEvents()
 
 def processEvents():
     QtGui.QApplication.processEvents()
