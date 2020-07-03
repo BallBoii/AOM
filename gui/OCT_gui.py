@@ -52,7 +52,7 @@ class MainExp_GUI(QtWidgets.QMainWindow, mainwindow.Ui_MainWindow):
         self.confocal_pl = np.array([])
 
         # Create PyQtGraph plots and histogram for confocal scans
-        for name in ['confocal', 'map']:
+        for name in ['confocal']:
             setattr(self, 'vb_%s' % name, pg.ViewBox())
             setattr(self, 'plt_%s' % name, pg.PlotItem(viewBox=getattr(self, 'vb_%s' % name)))
             setattr(self, 'qtimg_%s' % name, pg.ImageItem())
@@ -71,6 +71,8 @@ class MainExp_GUI(QtWidgets.QMainWindow, mainwindow.Ui_MainWindow):
         self.grid_confocal.addWidget(self.glw_confocal, 0, 0)
         self.grid_confocal.addWidget(self.hlw_confocal, 0, 1)
 
+        self.oct_rngx = []
+        self.oct_rngy = []
 
         '''OCT SPECTRUM & FFT'''
         self.plt_oct_spectrum = self.glw_tracker.addPlot(0, 0)
@@ -78,6 +80,8 @@ class MainExp_GUI(QtWidgets.QMainWindow, mainwindow.Ui_MainWindow):
         self.plt_oct_fft = self.glw_tracker.addPlot(1, 0)
         self.plt_oct_fft.setLabels(left='y axis name', bottom='x axis name')
 
+        self.oct_raw = []
+        self.oct_spectrum = []
         self.oct_image = []
         self.curve_oct_spectrum = self.plt_oct_spectrum.plot([], [], pen='r')
         self.curve_oct_fft = self.plt_oct_fft.plot([], [], pen='r')
@@ -85,10 +89,19 @@ class MainExp_GUI(QtWidgets.QMainWindow, mainwindow.Ui_MainWindow):
         '''Devices and Experiments'''
         self.cam0 = instr.IMAQ.CameraGigE('cam0')
         self.clk = instr.DAQmxCounterOutput.DAQmxCounterOutput('Dev1/ctr0') # PFI12
+        self.ao0 = instr.DAQmxAnalogOutput.DAQmxAnalogOutput('Dev1/ao0')
         self.exp_oct = exp.OCT.OCT(self)
 
         self.btn_confocal_start.clicked.connect(self.oct_start)
         self.btn_confocal_stop.clicked.connect(self.oct_stop)
+        self.btn_debug.clicked.connect(self.debug)
+
+        self.int_oct_frame_rate.valueChanged.connect(self.set_label)
+
+    def set_label(self, frame_rate):
+        max_exp_time = 1/frame_rate/self.int_confocal_x_numsteps.value()*1000
+        self.label_oct_max_exp_time.setText('Max Exp. Time %.3f ms' % max_exp_time)
+
 
     def oct_start(self):
         self.exp_oct.start()
@@ -119,18 +132,24 @@ class MainExp_GUI(QtWidgets.QMainWindow, mainwindow.Ui_MainWindow):
     def oct_updateplot(self):
         with warnings.catch_warnings():
             warnings.simplefilter('ignore', RuntimeWarning)  # for ignoring warnings when plotting NaNs
+            self.oct_spectrum = np.mean(self.oct_raw, 0)
+            self.oct_image = np.abs(np.fft.fft(self.oct_raw))
 
-            self.qtimg_confocal.setImage(np.random.rand(10, 10))
-
-            xvals = np.linspace(0, 2000, 2001)
-            yvals = np.sin((2*np.pi/2000)*10*np.random.normal(10)*xvals)
-
-            fft_x = np.linspace(0, 1/(xvals[1]-xvals[0]), 2001)
+            self.qtimg_confocal.setImage(self.oct_image)
+            xvals = np.arange(len(self.oct_spectrum))
+            yvals = self.oct_spectrum
+            fft_x = np.linspace(0, 1/(xvals[1]-xvals[0]), len(xvals))
             fft_y = np.abs(np.fft.fft(yvals))
 
             self.curve_oct_spectrum.setData(xvals, yvals)
             self.curve_oct_fft.setData(fft_x, fft_y)
             processEvents()
+
+    def closeEvent(self, *args, **kwargs):
+        self.cam0.close()
+
+    def debug(self):
+        pdb.set_trace()
 
 def processEvents():
     QtGui.QApplication.processEvents()

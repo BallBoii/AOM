@@ -22,6 +22,10 @@ class OCT(QThread):
         self.mainexp = mainexp
         self.wait_condition = wait_condition
 
+        self.cam = self.mainexp.cam0
+        self.clk = self.mainexp.clk
+        self.ao = self.mainexp.ao0
+
         if wait_condition is not None:
             self.signal_wait_for_mainexp.connect(wait_condition.wakeAll)
 
@@ -39,32 +43,53 @@ class OCT(QThread):
             self.mainexp.mutex.unlock()
 
     def setup_acquisition(self):
-        self.mainexp.cam0.setup_acquisition(False, 1)
-        self.mainexp.clk.reset()
-        self.mainexp.clk.set_freq(1000)
+        ao_start = self.mainexp.dbl_confocal_x_start.value()
+        ao_stop = self.mainexp.dbl_confocal_x_stop.value()
+        ao_numsteps = self.mainexp.int_confocal_x_numsteps.value()
+        exp_time_us = self.mainexp.dbl_confocal_acqtime.value()*1000
+        frame_rate = self.mainexp.int_oct_frame_rate.value()
+
+        self.mainexp.oct_rngx = np.linspace(ao_start, ao_stop, ao_numsteps)
+
+        self.ao.set_int_clock(1000000/exp_time_us, ao_numsteps)
+        self.ao.set_start_trigger('PFI12', PyDAQmx.Val_Rising)
+        self.ao.set_retriggerable(True)
+        self.ao.set_voltages(self.mainexp.oct_rngx)
+
+        self.cam.set_value('Height', ao_numsteps)
+        self.cam.set_value('CameraAttributes/AcquisitionControl/ExposureTime', exp_time_us)
+        self.cam.setup_acquisition(False, 1)
+        self.clk.reset()
+        self.clk.set_freq(frame_rate)
 
     def start_acquisition(self):
-        # todo: add looping for live feed here -- no we actually need to specify which frame to read
-        self.mainexp.cam0.start_acquisition()
-        # todo: start trigger
-        self.mainexp.clk.start()
-        self.wait_for_frame()
-        self.mainexp.oct_image = self.read_multiple_images()[0]
-        self.stop_acquisition()
+        self.clk.start()
+        self.ao.start()
+        # todo: OCT doesn't really care if there are multiple sweeps before the camera takes picture?
+        while not self.cancel:
+            self.cam.start_acquisition()
+            # todo: start trigger
+            self.cam.wait_for_frame()
+            self.mainexp.oct_raw = self.cam.read_multiple_images()[0]
+            self.signal_oct_updateplot.emit()
+            self.cam.stop_acquisition()
+
+        self.ao.stop()
+        self.ao.reset()
         self.clk.stop()
         self.clk.reset()
-        print(self.mainexp.oct_image)
+        # print(self.mainexp.oct_image)
 
     def clear_acquisition(self):
-        self.cam0.clear_acquisition()
+        self.mainexp.cam0.clear_acquisition()
 
     def run(self):
         self.cancel = False
 
-        self.signal_oct_initplot.emit()
+        # self.signal_oct_initplot.emit()
 
         self.setup_acquisition()
-        self.start_acquitision()
+        self.start_acquisition()
         self.clear_acquisition()
 
         # t_sleep = self.mainexp.dbl_confocal_acqtime.value()
