@@ -38,19 +38,45 @@ class OCT(QThread):
         finally:
             self.mainexp.mutex.unlock()
 
+    def setup_acquisition(self):
+        self.mainexp.cam0.setup_acquisition(False, 1)
+        self.mainexp.clk.reset()
+        self.mainexp.clk.set_freq(1000)
+
+    def start_acquisition(self):
+        # todo: add looping for live feed here -- no we actually need to specify which frame to read
+        self.mainexp.cam0.start_acquisition()
+        # todo: start trigger
+        self.mainexp.clk.start()
+        self.wait_for_frame()
+        self.mainexp.oct_image = self.read_multiple_images()[0]
+        self.stop_acquisition()
+        self.clk.stop()
+        self.clk.reset()
+        print(self.mainexp.oct_image)
+
+    def clear_acquisition(self):
+        self.cam0.clear_acquisition()
+
     def run(self):
         self.cancel = False
 
         self.signal_oct_initplot.emit()
 
-        t_sleep = self.mainexp.dbl_confocal_acqtime.value()
-        n_steps = self.mainexp.int_confocal_y_numdivs.value()
+        self.setup_acquisition()
+        self.start_acquitision()
+        self.clear_acquisition()
 
-        for i in range(n_steps):
-            if not self.cancel:
-                time.sleep(t_sleep)
-                self.signal_oct_updateplot.emit()
-        print('Success')
+        # t_sleep = self.mainexp.dbl_confocal_acqtime.value()
+        # n_steps = self.mainexp.int_confocal_y_numdivs.value()
+        #
+        # for i in range(n_steps):
+        #     if not self.cancel:
+        #         time.sleep(t_sleep)
+        #         self.signal_oct_updateplot.emit()
+        # print('Success')
+
+
         # self.prep_mainexp()
         # self.update()
         #

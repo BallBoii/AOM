@@ -78,9 +78,13 @@ class MainExp_GUI(QtWidgets.QMainWindow, mainwindow.Ui_MainWindow):
         self.plt_oct_fft = self.glw_tracker.addPlot(1, 0)
         self.plt_oct_fft.setLabels(left='y axis name', bottom='x axis name')
 
+        self.oct_image = []
         self.curve_oct_spectrum = self.plt_oct_spectrum.plot([], [], pen='r')
         self.curve_oct_fft = self.plt_oct_fft.plot([], [], pen='r')
 
+        '''Devices and Experiments'''
+        self.cam0 = instr.IMAQ.CameraGigE('cam0')
+        self.clk = instr.DAQmxCounterOutput.DAQmxCounterOutput('Dev1/ctr0') # PFI12
         self.exp_oct = exp.OCT.OCT(self)
 
         self.btn_confocal_start.clicked.connect(self.oct_start)

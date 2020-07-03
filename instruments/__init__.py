@@ -10,6 +10,7 @@ from . import DAQmxCounterInput
 from . import DAQmxTriggerOutput
 from . import DAQmxDigitalOutput
 from . import HP8780A
+from . import IMAQ
 from . import LakeShore
 from . import MSquared
 from . import NewFocus
