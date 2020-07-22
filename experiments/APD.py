@@ -101,23 +101,29 @@ class SeqAPD(ExpThread.ExpThread):
         numpnts = int(self.mainexp.dbl_seqapd_int_time.value() / seqapd_acqtime)
 
         # set up counter
-        self.mainexp.ctrapd.reset()
+        # self.mainexp.ctrapd.reset()
         self.mainexp.ctrclk.reset()
         self.mainexp.ctrtrig.set_time(0.001)
         self.mainexp.ctrtrig.reset()
         # create a ctrapd running on clock from ctrclk and wait for trigger from ctrtrig
-        self.mainexp.ctrapd.set_sample_clock(self.mainexp.inst_params['instruments']['ctrclk']['addr_out'],
+        # self.mainexp.ctrapd.set_sample_clock(self.mainexp.inst_params['instruments']['ctrclk']['addr_out'],
+        #                                      PyDAQmx.DAQmx_Val_Rising, numpnts + 1)
+        # self.mainexp.ctrapd.set_arm_start_trigger(self.mainexp.inst_params['instruments']['ctrtrig']['addr_out'],
+        #                                           PyDAQmx.DAQmx_Val_Rising)
+        # self.mainexp.ctrapd.set_read_all_samples(True)
+        self.mainexp.ai0.set_sample_clock(self.mainexp.inst_params['instruments']['ctrclk']['addr_out'],
                                              PyDAQmx.DAQmx_Val_Rising, numpnts + 1)
-        self.mainexp.ctrapd.set_arm_start_trigger(self.mainexp.inst_params['instruments']['ctrtrig']['addr_out'],
+        self.mainexp.ai0.set_start_trigger(self.mainexp.inst_params['instruments']['ctrtrig']['addr_out'],
                                                   PyDAQmx.DAQmx_Val_Rising)
-        self.mainexp.ctrapd.set_read_all_samples(True)
+        self.mainexp.ai0.set_read_all_samples(True)
         # creates a clock using pulses on self.mainexp.ctrclk (output to PFI7)
         self.mainexp.ctrclk.set_freq(1 / seqapd_acqtime)
         self.mainexp.ctrclk.start()
         time.sleep(.5)
 
         # start acquiring data
-        self.mainexp.ctrapd.start()
+        # self.mainexp.ctrapd.start()
+        self.mainexp.ai0.start()
         self.mainexp.ctrtrig.start()
         self.mainexp.ctrtrig.wait_until_done()
         self.mainexp.ctrtrig.stop()
@@ -127,21 +133,24 @@ class SeqAPD(ExpThread.ExpThread):
 
         self.mainexp.seqapd_pl = np.array([])
 
-        last_counter = 0  # Actual counter value, which monotonically counts up and need to be diff to get count rate
+        # last_counter = 0  # Actual counter value, which monotonically counts up and need to be diff to get count rate
+        last_counter = self.mainexp.ai0.get_voltages(1)
+        n_read = 1
 
         while not self.cancel and n_read < numpnts+1:
             time.sleep(t_update)
             # try to read twice as many samples as python time will always be slower
             # (assume it doesn't take more than 2*t_update)
-            ctr_raw = self.mainexp.ctrapd.get_counts(int(t_update / seqapd_acqtime * 2))
-            if n_read != 0:
-                ctr_diff = np.diff(np.append([last_counter], ctr_raw))
-            else:
-                ctr_diff = np.diff(ctr_raw)
+            # ctr_raw = self.mainexp.ctrapd.get_counts(int(t_update / seqapd_acqtime * 2))
+            ctr_raw = self.mainexp.ai0.get_voltages(int(t_update / seqapd_acqtime * 2))
+            # if n_read != 0:
+            #     ctr_diff = np.diff(np.append([last_counter], ctr_raw))
+            # else:
+            #     ctr_diff = np.diff(ctr_raw)
             if len(ctr_raw):
                 n_read += len(ctr_raw)
-                last_counter = ctr_raw[-1]
-                self.mainexp.seqapd_pl = np.append(self.mainexp.seqapd_pl, ctr_diff)
+                # last_counter = ctr_raw[-1]
+                self.mainexp.seqapd_pl = np.append(self.mainexp.seqapd_pl, ctr_raw)
                 self.mainexp.seqapd_t = np.arange(len(self.mainexp.seqapd_pl)) * seqapd_acqtime
                 self.signal_seqapd_updateplots.emit()
 
@@ -153,11 +162,13 @@ class SeqAPD(ExpThread.ExpThread):
                 self.mainexp.ctrclk.stop()
                 self.mainexp.ctrclk.reset()
                 try:
-                    self.mainexp.ctrapd.stop()
+                    # self.mainexp.ctrapd.stop()
+                    self.mainexp.ai0.stop()
                 except PyDAQmx.DAQmxFunctions.DAQError:
                     # It is normal for the PyDAQmx to throw an error when stopped prematurely
                     pass
-                self.mainexp.ctrapd.reset()
+                # self.mainexp.ctrapd.reset()
+                self.mainexp.ai0.reset()
 
         if self.mainexp.thread_terminal.isRunning() or self.mainexp.thread_batch.isRunning():
             self.save()
