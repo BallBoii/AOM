@@ -480,7 +480,7 @@ class Sweep(ExpThread.ExpThread):
                 return np.NaN
         else:  # pulsed esr
             time.sleep(delay)
-
+            
             self.ctr0.start()
             self.ctr1.start()
             self.ctr2.start()
@@ -488,6 +488,7 @@ class Sweep(ExpThread.ExpThread):
 
             self.pb.set_program(autostart=1)
             flag_cancel = self.pb.wait_until_finished_thd(self)
+            self.pb.stop()
 
             if flag_cancel == 0:
                 sig = self.ctr0.get_count()
