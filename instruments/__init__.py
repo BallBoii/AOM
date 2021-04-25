@@ -22,6 +22,7 @@ from . import PulseBlaster
 from . import PulseMaster
 from . import RohdeSchwarz
 from . import GPIBdev
+from . import Rigol
 from . import Thorlabs
 from . import Toptica
 from . import instr_widget
