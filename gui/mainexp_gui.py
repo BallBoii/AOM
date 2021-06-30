@@ -430,7 +430,7 @@ class MainExp_GUI(QtWidgets.QMainWindow, mainwindow.Ui_MainWindow):
 
         '''GUI CONTROLS'''
         # Define yellow-hot colormap
-        colors = np.array([[0, 0, 0, 1], [1, 0, 0, 1], [1, 1, 0, 1.0]])
+        colors = np.array([[0, 0, 0], [255, 0, 0], [255, 255, 0]])
         cm = pg.ColorMap([0, 0.5, 1], colors)
 
         '''CONFOCAL'''
