@@ -11,7 +11,6 @@ else:
 
 
 class DSG836A(GPIBdev.GPIBdev):
-
     def __init__(self, dev):
         super().__init__(dev)
 
@@ -211,3 +210,64 @@ class DG2102(GPIBdev.GPIBdev):
     def set_view(self, mode):
         # mode: STANdard|TEXT|GRAPh|DUAL
         self.gpib_write('DISP:VIEW %s' % mode) #todo
+
+class DSG836(GPIBdev.GPIBdev):
+    def __init__(self, dev):
+        super().__init__(dev)
+
+        self.pow_min = -110
+        self.pow_max = 20
+        self.freq_min = 9e3
+        self.freq_max = 3.6e9
+
+        self.set_mod(0)
+        self.set_iqmod(0)
+        self.set_output(0)
+
+    def set_freq(self, freq):
+        # set generator frequency in Hz
+        if (freq < self.freq_min) or (freq > self.freq_max):
+            print('Freq Range Error! Tried to set to %d' % freq)
+        else:
+            self.gpib_write(':FREQ %.6fHz' % freq)
+
+    def get_freq(self):
+        return float(self.gpib_query(':FREQ?'))
+
+    def set_pow(self, pow):
+        # set generator power in dBm
+        if (pow < self.pow_min) or (pow > self.pow_max):
+            print('Power Range Error! Tried to set to %f' % pow)
+        else:
+            self.gpib_write(':LEV %f' % pow)
+
+    def get_pow(self):
+        return float(self.gpib_query(':LEV?'))
+
+    def set_mod(self, b):
+        self.gpib_write(':MOD:STAT %d' % b)
+
+    def get_mod(self):
+        return int(self.gpib_query(':MOD:STAT?'))
+
+    def set_output(self, b):
+        self.gpib_write(':OUTP %d' % b)
+
+    def get_output(self):
+        return int(self.gpib_query(':OUTP?'))
+
+    def set_alc(self, b):
+        self.gpib_write(':CORR:FLAT %d' % b)
+
+    def set_pulsemod(self, b):
+        self.gpib_write(':PULM:STAT %d' % b)
+
+    def set_pulsemod_src(self, src):
+        self.gpib_write(':PULM:SOUR %s' % src)
+
+    def set_iqmod(self, b):
+        self.gpib_write(':IQ:MOD:STAT %d' % b)
+        self.set_mod(b)
+
+    def get_iqmod(self):
+        return int(self.gpib_query(':IQ:MOD:STAT?'))

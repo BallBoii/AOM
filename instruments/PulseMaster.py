@@ -191,7 +191,7 @@ class PulseMaster(instr.PulseBlaster.PBESRPro):
             self.pulse_func(self)  # all the looping and counter gating need to be defined in pulse_func() "eg: pb_rabi()"
         else:
             if 'inv' not in self.params.keys() or not self.isINV:  # conventional ESR data acquisition
-                if self.params_readoutcal_enable: # use longer readout pulse with more flexible timing
+                if self.params_readoutcal_enable or aom_delay < time_det + 12e-9: # use longer readout pulse with more flexible timing
                     self.add_inst(['green'], self.inst_set.CONTINUE, 0, time_green)
                     outer_loop = self.add_inst(awglist, self.inst_set.LOOP, n_loops, time_dark)
                     if self.awg_enable:
@@ -851,6 +851,12 @@ class PulseMaster(instr.PulseBlaster.PBESRPro):
                 flag_num += pow(2, 10)
             if 'ctr3' in flag_list:
                 flag_num += pow(2, 11)
+            if 'green_QDS' in flag_list:
+                flag_num += pow(2,12)
+            if 'mw_QDS' in flag_list:
+                flag_num += pow(2,13)
+            if 'mw_trig' in flag_list:
+                flag_num += pow(2,14)
         else:
             _pbnum = self.pb_dict['pbnum']
             _key = self.pb_dict['key']

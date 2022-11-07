@@ -56,10 +56,10 @@ class DAQmxChannel:
         pydaqmx.DAQmxSetReadReadAllAvailSamp(self.th, b)
         self.read_all_samples = b
 
-    def set_start_trigger(self, src, edge):
+    def set_start_trigger(self, src, edge=pydaqmx.DAQmx_Val_Rising):
         pydaqmx.DAQmxCfgDigEdgeStartTrig(self.th, src, edge)
 
-    def set_arm_start_trigger(self, src, edge):
+    def set_arm_start_trigger(self, src, edge=pydaqmx.DAQmx_Val_Rising):
         # maybe we do not need this?
         pydaqmx.DAQmxSetArmStartTrigType(self.th,pydaqmx.DAQmx_Val_DigEdge)
         pydaqmx.DAQmxSetDigEdgeArmStartTrigSrc(self.th,src)
