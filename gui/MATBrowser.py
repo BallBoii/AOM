@@ -8,7 +8,7 @@ import os
 from os.path import *
 import sys
 import re
-from PyQt5 import QtGui, QtCore, QtWidgets
+from PyQt6 import QtGui, QtCore, QtWidgets
 import pyqtgraph as pg
 import pandas as pd
 # import ui files

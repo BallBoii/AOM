@@ -1,4 +1,4 @@
-from pylablib.aux_libs.devices import IMAQdx, IMAQdx_lib
+from pylablib.legacy.aux_libs.devices import IMAQdx, IMAQdx_lib
 from pylablib.core.utils import dictionary, py3, general
 from pylablib.core.devio import data_format, interface
 from pylablib.core.dataproc import image as image_utils

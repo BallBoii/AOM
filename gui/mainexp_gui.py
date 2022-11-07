@@ -1,4 +1,4 @@
-from PyQt5 import QtGui, QtCore, QtWidgets
+from PyQt6 import QtGui, QtCore, QtWidgets
 
 # system imports
 import sys, os, struct, scipy.io, warnings, functools, time, datetime
@@ -28,7 +28,7 @@ sys.excepthook = my_excepthook
 class MainExp_GUI(QtWidgets.QMainWindow, mainwindow.Ui_MainWindow):
     def __init__(self, galvo2=False):
         # constructor from QMainWindow parent class
-        super(self.__class__,self).__init__()
+        super(self.__class__, self).__init__()
 
         # configure PyQTgraph to use white background
         pg.setConfigOption('background', 'w')
@@ -43,7 +43,7 @@ class MainExp_GUI(QtWidgets.QMainWindow, mainwindow.Ui_MainWindow):
         # and that Qt has a chance to automatically delete all the children of the top-level window
         # before the python garbage-collector gets to work.
         # http://stackoverflow.com/questions/27131294/error-qobjectstarttimer-qtimer-can-only-be-used-with-threads-started-with-qt
-        self.setAttribute(QtCore.Qt.WA_DeleteOnClose)
+        self.setAttribute(QtCore.Qt.WidgetAttribute.WA_DeleteOnClose)
 
         # Create GUI for widgets
         self.widget_tracker = mainexp_widgets.TrackerControl(self)
@@ -53,7 +53,7 @@ class MainExp_GUI(QtWidgets.QMainWindow, mainwindow.Ui_MainWindow):
         self.widget_liveapd = mainexp_widgets.LiveAPD(self)
         self.import_gui_control(self.widget_liveapd)
         self.btn_widget_liveapd.clicked.connect(self.widget_liveapd.display)
-        self.shortcut_widget_liveapd = QtWidgets.QShortcut(QtGui.QKeySequence('Ctrl+L'), self)
+        self.shortcut_widget_liveapd = QtGui.QShortcut(QtGui.QKeySequence('Ctrl+L'), self)
         self.shortcut_widget_liveapd.activated.connect(self.btn_widget_liveapd.toggle)
 
         self.widget_seqapd = mainexp_widgets.SeqAPD(self)
@@ -83,7 +83,7 @@ class MainExp_GUI(QtWidgets.QMainWindow, mainwindow.Ui_MainWindow):
         self.widget_terminal = mainexp_widgets.Terminal(self)
         self.import_gui_control(self.widget_terminal)
         self.btn_widget_terminal.clicked.connect(self.widget_terminal.display)
-        self.shortcut_widget_terminal = QtWidgets.QShortcut(QtGui.QKeySequence('Ctrl+J'), self)
+        self.shortcut_widget_terminal = QtGui.QShortcut(QtGui.QKeySequence('Ctrl+J'), self)
         self.shortcut_widget_terminal.activated.connect(self.widget_terminal.bringToFront)
 
         self.widget_shortcuts = mainexp_widgets.Shortcuts(self)
@@ -139,11 +139,11 @@ class MainExp_GUI(QtWidgets.QMainWindow, mainwindow.Ui_MainWindow):
 
                 if btnlist:
                     nextrow = self.grid_inst_btn.rowCount()
-                    self.grid_inst_btn.addWidget(QtGui.QLabel(ins), nextrow, 0)
+                    self.grid_inst_btn.addWidget(QtWidgets.QLabel(ins), nextrow, 0)
                     i = 1
                     for btn in btnlist:
                         btn_text = btn[4:]
-                        btn_obj = QtGui.QPushButton(btn_text)
+                        btn_obj = QtWidgets.QPushButton(btn_text)
                         setattr(self, 'inst_%s_%s' % (ins, btn),btn_obj)
                         btn_obj.clicked.connect(getattr(instrobj, btn))
                         self.grid_inst_btn.addWidget(btn_obj, nextrow, i)
@@ -435,13 +435,13 @@ class MainExp_GUI(QtWidgets.QMainWindow, mainwindow.Ui_MainWindow):
 
         '''CONFOCAL'''
         self.btn_confocal_mode_xy.setChecked(True)
-        self.btn_confocal_mode = QtGui.QButtonGroup()
+        self.btn_confocal_mode = QtWidgets.QButtonGroup()
         self.btn_confocal_mode.addButton(self.btn_confocal_mode_xy, 0)
         self.btn_confocal_mode.addButton(self.btn_confocal_mode_xz, 1)
         self.btn_confocal_mode.addButton(self.btn_confocal_mode_yz, 2)
-        self.btn_confocal_mode.buttonClicked[int].connect(self.confocal_mode_select)
+        self.btn_confocal_mode.buttonClicked.connect(self.confocal_mode_select)
         self.btn_confocal_start.clicked.connect(self.confocal_start)
-        self.btn_confocal_live.toggled[bool].connect(self.confocal_live)
+        self.btn_confocal_live.toggled.connect(self.confocal_live)
         self.int_confocal_live_avg.valueChanged.connect(self.confocal_live_set_avg)
         self.btn_confocal_stop.clicked.connect(self.confocal_stop)
         self.btn_confocal_save.clicked.connect(functools.partial(self.thread_confocal.save, ext=True))
@@ -626,10 +626,10 @@ class MainExp_GUI(QtWidgets.QMainWindow, mainwindow.Ui_MainWindow):
         self.tree_exp_params.setAlternatingRowColors(True)
         self.tree_exp_params.setSortingEnabled(True)
         self.tree_exp_params.setHeaderHidden(False)
-        self.tree_exp_params.setSelectionBehavior(QtGui.QAbstractItemView.SelectItems)
+        # self.tree_exp_params.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectItems)
         self.tree_exp_params.model().itemChanged.connect(self.exp_params_paramsChanged)
         self.label_exp_params.setText('')
-        self.label_exp_params.setAttribute(QtCore.Qt.WA_TransparentForMouseEvents)
+        # self.label_exp_params.setAttribute(QtCore.Qt.WA_TransparentForMouseEvents)
 
         '''SWEEP CONTROL'''
         self.btn_exp_start.clicked.connect(self.sweep_start)
@@ -800,7 +800,7 @@ class MainExp_GUI(QtWidgets.QMainWindow, mainwindow.Ui_MainWindow):
         self.label_nvlist_numtrack.setPixmap(QtGui.QPixmap(os.path.join(os.getcwd(), 'gui', 'icons', 'target.png')))
         self.btn_nvlist_clear.clicked.connect(self.nvlist_clear)
         self.btn_nvlist_add.toggled.connect(self.nvlist_select)
-        self.shortcut_nvlist_add = QtWidgets.QShortcut(QtGui.QKeySequence('Ctrl+A'), self)
+        self.shortcut_nvlist_add = QtGui.QShortcut(QtGui.QKeySequence('Ctrl+A'), self)
         self.shortcut_nvlist_add.activated.connect(functools.partial(self.btn_nvlist_add.setChecked, True))
         self.btn_nvlist_del.clicked.connect(self.nvlist_del)
         self.btn_nvlist_save.clicked.connect(self.nvlist_save)
@@ -1332,13 +1332,13 @@ class MainExp_GUI(QtWidgets.QMainWindow, mainwindow.Ui_MainWindow):
 
         for x in self.exp_params:
             parent = QtGui.QStandardItem(x)
-            parent.setFlags(QtCore.Qt.NoItemFlags)
+            parent.setFlags(QtCore.Qt.ItemFlag.NoItemFlags)
             for y in self.exp_params[x]:
                 params_list.append(y)
                 value = self.exp_params[x][y]
                 child0 = QtGui.QStandardItem(y)
-                child0.setFlags(QtCore.Qt.NoItemFlags |
-                                QtCore.Qt.ItemIsEnabled)
+                child0.setFlags(QtCore.Qt.ItemFlag.NoItemFlags |
+                                QtCore.Qt.ItemFlag.ItemIsEnabled)
                 child0.setCheckable(True)
                 if refresh_params_inputs:
                     # default the checkboxes appropriately
@@ -1355,14 +1355,14 @@ class MainExp_GUI(QtWidgets.QMainWindow, mainwindow.Ui_MainWindow):
                         child0.setCheckState(chkbox_state[y])
 
                 child1 = QtGui.QStandardItem(str(value))
-                child1.setFlags(QtCore.Qt.ItemIsEnabled |
-                                QtCore.Qt.ItemIsEditable |
-                                ~ QtCore.Qt.ItemIsSelectable)
+                child1.setFlags(QtCore.Qt.ItemFlag.ItemIsEnabled |
+                                QtCore.Qt.ItemFlag.ItemIsEditable |
+                                ~ QtCore.Qt.ItemFlag.ItemIsSelectable)
                 parent.appendRow([child0, child1])
             self.tree_exp_params.model().appendRow(parent)
 
         self.tree_exp_params.expandAll()
-        self.tree_exp_params.sortByColumn(0, 0)  # sort by column 0, in ascending order
+        self.tree_exp_params.sortByColumn(0, QtCore.Qt.SortOrder.AscendingOrder)
 
         self.update_params_label()
 
@@ -1505,10 +1505,7 @@ class MainExp_GUI(QtWidgets.QMainWindow, mainwindow.Ui_MainWindow):
         for name in ['confocal']:
             qtimg = getattr(self, 'qtimg_%s' % name)
             qtimg.resetTransform()  # need to call this. otherwise pos and scale are relative to previous
-            qtimg.setPos(start_x, start_y)
-            scale_x = (stop_x - start_x)/(qtimg.image.shape[0])
-            scale_y = (stop_y - start_y)/(qtimg.image.shape[1])
-            qtimg.scale(scale_x, scale_y)
+            qtimg.setRect(start_x, start_y, (stop_x - start_x), (stop_y - start_y))
 
         if self.confocal_mode == 0:
             self.plt_confocal.setLabels(bottom='xpos (&mu;m)', left='ypos (&mu;m)')
@@ -1611,10 +1608,7 @@ class MainExp_GUI(QtWidgets.QMainWindow, mainwindow.Ui_MainWindow):
             if len(self.map_data) > 0:
                 self.qtimg_map.setImage(self.map_data)
                 self.qtimg_map.resetTransform()
-                self.qtimg_map.setPos(self.map_ax_xmin, self.map_ax_ymin)
-                scale_x = (self.map_ax_xmax - self.map_ax_xmin) / (self.qtimg_map.image.shape[0])
-                scale_y = (self.map_ax_ymax - self.map_ax_ymin) / (self.qtimg_map.image.shape[1])
-                self.qtimg_map.scale(scale_x, scale_y)
+                self.qtimg_map.setRect(self.map_ax_xmin, self.map_ax_ymin, (self.map_ax_xmax - self.map_ax_xmin), (self.map_ax_ymax - self.map_ax_ymin))
 
                 # self.hlw_map.setImageItem(self.qtimg_map)
 
@@ -2233,10 +2227,7 @@ class MainExp_GUI(QtWidgets.QMainWindow, mainwindow.Ui_MainWindow):
                     data = getattr(self, 'esrtrace_%s' % datatype)
                     qtimg.setImage(data)
                     qtimg.resetTransform()  # need to call this. otherwise pos and scale are relative to previous
-                    qtimg.setPos(start_x, start_y)
-                    scale_x = (stop_x - start_x) / (qtimg.image.shape[0])
-                    scale_y = (stop_y - start_y) / (qtimg.image.shape[1])
-                    qtimg.scale(scale_x, scale_y)
+                    qtimg.setRect(start_x, start_y, (stop_x - start_x), (stop_y - start_y))
 
                     plt = getattr(self, 'plt2d_%s' % datatype)
                     plt.setTitle(plt_title[datatype], size='8pt')
@@ -2379,10 +2370,7 @@ class MainExp_GUI(QtWidgets.QMainWindow, mainwindow.Ui_MainWindow):
                 data = getattr(self, 'esrtrace_%s' % datatype)
                 qtimg.setImage(data)
                 qtimg.resetTransform()  # need to call this. otherwise pos and scale are relative to previous
-                qtimg.setPos(start_x, start_y)
-                scale_x = (stop_x - start_x) / (qtimg.image.shape[0])
-                scale_y = (stop_y - start_y) / (qtimg.image.shape[1])
-                qtimg.scale(scale_x, scale_y)
+                qtimg.setRect(start_x, start_y, (stop_x - start_x), (stop_y - start_y))
 
                 plt = getattr(self, 'plt2d_%s' % datatype)
 
@@ -2963,12 +2951,13 @@ class MainExp_GUI(QtWidgets.QMainWindow, mainwindow.Ui_MainWindow):
 
 
 def processEvents():
-    QtGui.QApplication.processEvents()
+    QtWidgets.QApplication.processEvents()
 
 
 def main(dualgalvo=False):
     """Packaged main function that launches GUI"""
     app = QtWidgets.QApplication(sys.argv)
+
     form = MainExp_GUI()
     form.show()
 
@@ -2978,8 +2967,9 @@ def main(dualgalvo=False):
 
     # form.chkbox_tracktime.setChecked(False)
     # form.chkboxsave.setChecked(False)
-    app.exec_()
+    sys.exit(app.exec())
 
 
 if __name__ == '__main__':
     main('dualgalvo' in sys.argv)
+

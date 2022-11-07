@@ -1,8 +1,8 @@
-from PyQt5 import QtGui, QtCore, QtWidgets
-from PyQt5.QtCore import pyqtSignal
+from PyQt6 import QtGui, QtCore, QtWidgets
+from PyQt6.QtCore import pyqtSignal
 
 
-class GenericWidget(QtGui.QWidget):
+class GenericWidget(QtWidgets.QWidget):
 
     signal_btn_checked = pyqtSignal(bool)
 
@@ -10,7 +10,7 @@ class GenericWidget(QtGui.QWidget):
         super().__init__()
         self.setWindowFlags(QtCore.Qt.WindowCloseButtonHint | QtCore.Qt.WindowStaysOnTopHint)
 
-        self.shortcut_close = QtWidgets.QShortcut(QtGui.QKeySequence('Alt+W'), self)
+        self.shortcut_close = QtGui.QShortcut(QtGui.QKeySequence('Alt+W'), self)
         self.shortcut_close.activated.connect(self.close)
 
     def display(self, disp):

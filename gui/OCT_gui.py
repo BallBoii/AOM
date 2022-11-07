@@ -1,4 +1,4 @@
-from PyQt5 import QtGui, QtCore, QtWidgets
+from PyQt6 import QtGui, QtCore, QtWidgets
 
 # system imports
 import sys, os, struct, scipy.io, warnings, functools, time, datetime

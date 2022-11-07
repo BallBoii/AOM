@@ -1,7 +1,7 @@
 import numpy as np
 import time
-from PyQt5 import QtCore
-from PyQt5.QtCore import pyqtSignal
+from PyQt6 import QtCore
+from PyQt6.QtCore import pyqtSignal
 import ctypes as ct
 from ctypes import byref
 

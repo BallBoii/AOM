@@ -11,7 +11,7 @@ import sys
 import confocal_browser
 
 import numpy as np
-from PyQt5 import QtGui, QtCore, QtWidgets
+from PyQt6 import QtGui, QtCore, QtWidgets
 import pyqtgraph as pg
 import scipy.io
 import functools

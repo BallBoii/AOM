@@ -1,5 +1,5 @@
 import os, yaml, scipy.io, pickle, csv
-from PyQt5 import QtGui
+from PyQt6 import QtGui
 
 
 def dict2yaml(expt_dict, filename='exp_params.yaml'):
@@ -12,7 +12,7 @@ def yaml2dict(filename='exp_params.yaml'):
     data = {}
     with open(filename, 'r') as infile:
         try:
-            data = yaml.load(infile)
+            data = yaml.safe_load(infile)
         except yaml.YAMLError as exc:
             print(exc)
 

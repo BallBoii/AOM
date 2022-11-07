@@ -1,4 +1,4 @@
-from PyQt5 import QtGui, QtCore, QtWidgets
+from PyQt6 import QtGui, QtCore, QtWidgets
 
 # system imports
 import weakref, datetime, pytz
@@ -19,16 +19,16 @@ import widget_terminal
 import widget_shortcuts
 
 
-class TrackerControl(QtGui.QWidget, widget_tracker.Ui_Form):
+class TrackerControl(QtWidgets.QWidget, widget_tracker.Ui_Form):
     def __init__(self, mainexp):
         super().__init__()
         self.setupUi(self)
         self.mainexp = mainexp
 
         self.setFixedSize(self.size())
-        self.setWindowFlags(QtCore.Qt.WindowCloseButtonHint | QtCore.Qt.WindowStaysOnTopHint)
+        self.setWindowFlags(QtCore.Qt.WindowType.WindowCloseButtonHint | QtCore.Qt.WindowType.WindowStaysOnTopHint)
 
-        self.shortcut_close = QtWidgets.QShortcut(QtGui.QKeySequence('Alt+W'), self)
+        self.shortcut_close = QtGui.QShortcut(QtGui.QKeySequence('Alt+W'), self)
         self.shortcut_close.activated.connect(self.close)
 
     def display(self, disp):
@@ -41,16 +41,16 @@ class TrackerControl(QtGui.QWidget, widget_tracker.Ui_Form):
         self.mainexp.btn_widget_tracker.setChecked(False)
 
 
-class LiveAPD(QtGui.QWidget, widget_liveapd.Ui_Form):
+class LiveAPD(QtWidgets.QWidget, widget_liveapd.Ui_Form):
     def __init__(self, mainexp):
         super().__init__()
         self.setupUi(self)
         self.mainexp = mainexp
 
         self.setFixedSize(self.size())
-        self.setWindowFlags(QtCore.Qt.WindowCloseButtonHint | QtCore.Qt.WindowStaysOnTopHint)
+        self.setWindowFlags(QtCore.Qt.WindowType.WindowCloseButtonHint | QtCore.Qt.WindowType.WindowStaysOnTopHint)
 
-        self.shortcut_close = QtWidgets.QShortcut(QtGui.QKeySequence('Alt+W'), self)
+        self.shortcut_close = QtGui.QShortcut(QtGui.QKeySequence('Alt+W'), self)
         self.shortcut_close.activated.connect(self.close)
 
     def display(self, disp):
@@ -65,16 +65,16 @@ class LiveAPD(QtGui.QWidget, widget_liveapd.Ui_Form):
         self.mainexp.btn_widget_liveapd.setChecked(False)
 
 
-class SeqAPD(QtGui.QWidget, widget_seqapd.Ui_Form):
+class SeqAPD(QtWidgets.QWidget, widget_seqapd.Ui_Form):
     def __init__(self, mainexp):
         super().__init__()
         self.setupUi(self)
         self.mainexp = mainexp
 
         self.setFixedSize(self.size())
-        self.setWindowFlags(QtCore.Qt.WindowCloseButtonHint | QtCore.Qt.WindowStaysOnTopHint)
+        self.setWindowFlags(QtCore.Qt.WindowType.WindowCloseButtonHint | QtCore.Qt.WindowType.WindowStaysOnTopHint)
 
-        self.shortcut_close = QtWidgets.QShortcut(QtGui.QKeySequence('Alt+W'), self)
+        self.shortcut_close = QtGui.QShortcut(QtGui.QKeySequence('Alt+W'), self)
         self.shortcut_close.activated.connect(self.close)
 
     def display(self, disp):
@@ -87,16 +87,16 @@ class SeqAPD(QtGui.QWidget, widget_seqapd.Ui_Form):
         self.mainexp.btn_widget_seqapd.setChecked(False)
 
 
-class SatCurve(QtGui.QWidget, widget_satcurve.Ui_Form):
+class SatCurve(QtWidgets.QWidget, widget_satcurve.Ui_Form):
     def __init__(self, mainexp):
         super().__init__()
         self.setupUi(self)
         self.mainexp = mainexp
 
         self.setFixedSize(self.size())
-        self.setWindowFlags(QtCore.Qt.WindowCloseButtonHint | QtCore.Qt.WindowStaysOnTopHint)
+        self.setWindowFlags(QtCore.Qt.WindowType.WindowCloseButtonHint | QtCore.Qt.WindowType.WindowStaysOnTopHint)
 
-        self.shortcut_close = QtWidgets.QShortcut(QtGui.QKeySequence('Alt+W'), self)
+        self.shortcut_close = QtGui.QShortcut(QtGui.QKeySequence('Alt+W'), self)
         self.shortcut_close.activated.connect(self.close)
 
     def display(self, disp):
@@ -109,16 +109,16 @@ class SatCurve(QtGui.QWidget, widget_satcurve.Ui_Form):
         self.mainexp.btn_widget_satcurve.setChecked(False)
 
 
-class Histogram(QtGui.QWidget, widget_histogram.Ui_Form):
+class Histogram(QtWidgets.QWidget, widget_histogram.Ui_Form):
     def __init__(self, mainexp):
         super().__init__()
         self.setupUi(self)
         self.mainexp = mainexp
 
         self.setFixedSize(self.size())
-        self.setWindowFlags(QtCore.Qt.WindowCloseButtonHint | QtCore.Qt.WindowStaysOnTopHint)
+        self.setWindowFlags(QtCore.Qt.WindowType.WindowCloseButtonHint | QtCore.Qt.WindowType.WindowStaysOnTopHint)
 
-        self.shortcut_close = QtWidgets.QShortcut(QtGui.QKeySequence('Alt+W'), self)
+        self.shortcut_close = QtGui.QShortcut(QtGui.QKeySequence('Alt+W'), self)
         self.shortcut_close.activated.connect(self.close)
 
     def display(self, disp):
@@ -131,16 +131,16 @@ class Histogram(QtGui.QWidget, widget_histogram.Ui_Form):
         self.mainexp.btn_widget_histogram.setChecked(False)
 
 
-class Picoharp(QtGui.QWidget, widget_picoharp.Ui_Form):
+class Picoharp(QtWidgets.QWidget, widget_picoharp.Ui_Form):
     def __init__(self, mainexp):
         super().__init__()
         self.setupUi(self)
         self.mainexp = mainexp
 
         self.setFixedSize(self.size())
-        self.setWindowFlags(QtCore.Qt.WindowCloseButtonHint | QtCore.Qt.WindowStaysOnTopHint)
+        self.setWindowFlags(QtCore.Qt.WindowType.WindowCloseButtonHint | QtCore.Qt.WindowType.WindowStaysOnTopHint)
 
-        self.shortcut_close = QtWidgets.QShortcut(QtGui.QKeySequence('Alt+W'), self)
+        self.shortcut_close = QtGui.QShortcut(QtGui.QKeySequence('Alt+W'), self)
         self.shortcut_close.activated.connect(self.close)
 
     def display(self, disp):
@@ -163,20 +163,20 @@ kB = 1.38064852e-2  # zJ / K
 e = 1.60217662e-1  # zJ / mV
 
 
-class Calculator(QtGui.QWidget, widget_calculator.Ui_Form):
+class Calculator(QtWidgets.QWidget, widget_calculator.Ui_Form):
     def __init__(self, mainexp):
         super().__init__()
         self.setupUi(self)
         self.mainexp = mainexp
 
         self.setFixedSize(self.size())
-        self.setWindowFlags(QtCore.Qt.WindowCloseButtonHint | QtCore.Qt.WindowStaysOnTopHint)
+        self.setWindowFlags(QtCore.Qt.WindowType.WindowCloseButtonHint | QtCore.Qt.WindowType.WindowStaysOnTopHint)
 
         self.btn_nvfreq.clicked.connect(self.get_nvfreq)
         self.btn_deerfreq.clicked.connect(self.get_deerfreq)
         self.btn_nvfreq_2.clicked.connect(self.get_nvfreq_2)
 
-        self.shortcut_close = QtWidgets.QShortcut(QtGui.QKeySequence('Alt+W'), self)
+        self.shortcut_close = QtGui.QShortcut(QtGui.QKeySequence('Alt+W'), self)
         self.shortcut_close.activated.connect(self.close)
 
         self.dbl_calc_Bz.valueChanged.connect(self.calc_Bz)
@@ -349,16 +349,16 @@ class Calculator(QtGui.QWidget, widget_calculator.Ui_Form):
             pass
 
 
-class Batch(QtGui.QWidget, widget_batch.Ui_Form):
+class Batch(QtWidgets.QWidget, widget_batch.Ui_Form):
     def __init__(self, mainexp):
         super().__init__()
         self.setupUi(self)
         self.mainexp = mainexp
 
         self.setFixedSize(self.size())
-        self.setWindowFlags(QtCore.Qt.WindowCloseButtonHint)
+        # self.setWindowFlags(QtCore.Qt.WindowCloseButtonHint)
 
-        self.shortcut_close = QtWidgets.QShortcut(QtGui.QKeySequence('Alt+W'), self)
+        self.shortcut_close = QtGui.QShortcut(QtGui.QKeySequence('Alt+W'), self)
         self.shortcut_close.activated.connect(self.close)
 
     def display(self, disp):
@@ -371,7 +371,7 @@ class Batch(QtGui.QWidget, widget_batch.Ui_Form):
         self.mainexp.btn_widget_batch.setChecked(False)
 
 
-class Terminal(QtGui.QWidget, widget_terminal.Ui_Form):
+class Terminal(QtWidgets.QWidget, widget_terminal.Ui_Form):
     def __init__(self, mainexp):
         super().__init__()
         self.setupUi(self)
@@ -379,12 +379,12 @@ class Terminal(QtGui.QWidget, widget_terminal.Ui_Form):
         self.mainexp = mainexp
 
         self.setFixedSize(self.size())
-        self.setWindowFlags(QtCore.Qt.WindowCloseButtonHint)
+        self.setWindowFlags(QtCore.Qt.WindowType.WindowCloseButtonHint)
 
-        self.shortcut_close = QtWidgets.QShortcut(QtGui.QKeySequence('Alt+W'), self)
+        self.shortcut_close = QtGui.QShortcut(QtGui.QKeySequence('Alt+W'), self)
         self.shortcut_close.activated.connect(self.close)
 
-        self.shortcut_focus = QtWidgets.QShortcut(QtGui.QKeySequence('Ctrl+J'), self)
+        self.shortcut_focus = QtGui.QShortcut(QtGui.QKeySequence('Ctrl+J'), self)
         self.shortcut_focus.activated.connect(self.setFocus)
 
         self.linein_terminal_cmd.setFocus()
@@ -407,16 +407,16 @@ class Terminal(QtGui.QWidget, widget_terminal.Ui_Form):
         self.mainexp.btn_widget_terminal.setChecked(False)
 
 
-class Shortcuts(QtGui.QWidget, widget_shortcuts.Ui_Form):
+class Shortcuts(QtWidgets.QWidget, widget_shortcuts.Ui_Form):
     def __init__(self, mainexp):
         super().__init__()
         self.setupUi(self)
         self.mainexp = mainexp
 
         self.setFixedSize(self.size())
-        self.setWindowFlags(QtCore.Qt.WindowCloseButtonHint | QtCore.Qt.WindowStaysOnTopHint)
+        self.setWindowFlags(QtCore.Qt.WindowType.WindowCloseButtonHint | QtCore.Qt.WindowType.WindowStaysOnTopHint)
 
-        self.shortcut_close = QtWidgets.QShortcut(QtGui.QKeySequence('Alt+W'), self)
+        self.shortcut_close = QtGui.QShortcut(QtGui.QKeySequence('Alt+W'), self)
         self.shortcut_close.activated.connect(self.close)
 
     def display(self, disp):
@@ -436,7 +436,7 @@ class CustomLUTWidget(pg.GraphicsView):
         pg.GraphicsView.__init__(self, parent, useOpenGL=False, background=background)
         self.item = CustomLUTItem(*args, **kargs)
         self.setCentralItem(self.item)
-        self.setSizePolicy(QtGui.QSizePolicy.Preferred, QtGui.QSizePolicy.Expanding)
+        self.setSizePolicy(QtWidgets.QSizePolicy.Policy.Preferred, QtWidgets.QSizePolicy.Policy.Expanding)
         self.setMinimumWidth(56)
 
         self.gradient.rectSize = 7  # width of color bar

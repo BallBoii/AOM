@@ -1,5 +1,5 @@
-from PyQt5 import QtGui, QtCore
-from PyQt5.QtCore import QThread, pyqtSignal
+from PyQt6 import QtGui, QtCore
+from PyQt6.QtCore import QThread, pyqtSignal
 
 from . import ExpThread
 

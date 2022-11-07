@@ -1,4 +1,4 @@
-from PyQt5.QtCore import pyqtSignal
+from PyQt6.QtCore import pyqtSignal
 import PyDAQmx, time, datetime
 import numpy as np
 import warnings
