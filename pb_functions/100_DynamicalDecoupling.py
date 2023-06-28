@@ -16,3 +16,16 @@ def pb_cpmg(self):
         self.add_inst(['mw1'], self.inst_set.CONTINUE, 0, self.params['pulsewidth_pi2'])
     else:
         self.add_inst(['mw1'], self.inst_set.CONTINUE, 0, self.params['pulsewidth_pi32'])
+
+def pb_ramsey_params(self):
+    self.params = self.default_params()
+    self.params.update(
+        {'pulsewidth_pi2': 28e-9, 'pulsewidth_pi32': 84e-9, 'tau': 100e-9, 'inv': 0})
+
+def pb_ramsey(self):
+    self.add_inst(['mw1'], self.inst_set.CONTINUE, 0, self.params['pulsewidth_pi2'])
+    self.add_inst([''], self.inst_set.CONTINUE, 0, self.params['tau'])
+    if np.uint32(self.params['inv']) == 0:  # determine whether to apply pi/2 or 3pi/2 pulse
+        self.add_inst(['mw1'], self.inst_set.CONTINUE, 0, self.params['pulsewidth_pi2'])
+    else:
+        self.add_inst(['mw1'], self.inst_set.CONTINUE, 0, self.params['pulsewidth_pi32'])
