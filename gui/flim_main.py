@@ -41,7 +41,7 @@ class ImageView(pg.ImageView):
 
 
 class MainFLIM(QtWidgets.QMainWindow, mainwindow.Ui_MainWindow):
-    def __init__(self, galvo2=False):
+    def __init__(self):
         # constructor from QMainWindow parent class
         super(self.__class__, self).__init__()
 
@@ -51,8 +51,11 @@ class MainFLIM(QtWidgets.QMainWindow, mainwindow.Ui_MainWindow):
 
         # setupUi sits in exptdesign, as defined by Qt Designer
         self.setupUi(self)
-
         self.setFixedSize(self.size())
+
+        # Define yellow-hot colormap
+        colors = np.array([[0, 0, 0], [255, 0, 0], [255, 255, 0]])
+        cmap_yellowhot = pg.ColorMap([0, 0.5, 1], colors)
 
         # data = scipy.io.loadmat('Leaf Section.mat')
         data = scipy.io.loadmat('Cockroach Leg.mat')
@@ -61,190 +64,80 @@ class MainFLIM(QtWidgets.QMainWindow, mainwindow.Ui_MainWindow):
         print(data['intensity'].shape)
         print(data['tau'].shape)
 
-        img_intensity = np.reshape(data['intensity'], (201,201))
-        img_tau = np.reshape(data['tau'], (201,201))
+        nx = int(np.sqrt(data['TCSPC'].shape[0]))  # todo: make this general for non-squared images
+
+        img_intensity = np.reshape(data['intensity'], (nx, nx))
+        img_lifetime = np.reshape(data['tau'], (nx, nx))
         curve_timetrace = np.sum(data['TCSPC'], axis=0)
-
-        # creating a label
-        label = QtWidgets.QLabel("Geeksforgeeks Image View")
-
-        # setting minimum width
-        label.setMinimumWidth(130)
-
-        # making label do word wrap
-        label.setWordWrap(True)
 
         # setting configuration options
         pg.setConfigOptions(antialias=True)
 
-        # Create random 3D data set with noisy signals
-        img = pg.gaussianFilter(np.random.normal(
-            size=(200, 200)), (5, 5)) * 20 + 100
+        self.grid_main.setRowMinimumHeight(0, 400)
 
-        # Define yellow-hot colormap
-        colors = np.array([[0, 0, 0], [255, 0, 0], [255, 255, 0]])
-        cmap = pg.ColorMap([0, 0.5, 1], colors)
+        # Create PlotItem for each graphs
+        pi_intensity = pg.PlotItem(title='Intensity Image')
+        pi_lifetime = pg.PlotItem(title='FLIM Image')
+        pi_gated = pg.PlotItem(title='Gated Image')
+        pi_hist2d = pg.PlotItem(title='Intensity vs Lifetime')
+        pi_hist1d_intensity = pg.PlotItem(title='Intensity Histogram')
+        pi_hist1d_lifetime = pg.PlotItem(title='Lifetime Histogram')
+        pi_timetrace = pg.PlotItem(title='Fluorescence Time Trace')
+        pi_phasor = pg.PlotItem(title='Phasor')
 
-        '''Fig. 0: Intensity Histogram'''
-        # Add Plot item to show axis labels
-        plot = pg.PlotItem()
-        wgt = pg.PlotWidget(plotItem=plot)
-        self.grid_main.addWidget(wgt, 0, 0)
+        # Create ImageView for the images
+        imv_intensity = ImageView(view=pi_intensity)
+        imv_lifetime = ImageView(view=pi_lifetime)
+        imv_gated = ImageView(view=pi_gated)
+        imv_hist2d = ImageView(view=pi_hist2d)
 
+        imv_intensity.setColorMap(cmap_yellowhot)
+        imv_lifetime.setColorMap(cmap_yellowhot)
+        imv_gated.setColorMap(cmap_yellowhot)
+        imv_hist2d.setColorMap(cmap_yellowhot)
 
-        '''Fig. 1: Intensity Image'''
-        # Add Plot item to show axis labels
-        plot = pg.PlotItem()
-        plot.setLabel(axis='left', text='Y-axis')
-        plot.setLabel(axis='bottom', text='X-axis')
-        plot.setTitle('Fig. 1: Intensity Image')
+        # Create PlotWidgets for graphs
+        pw_hist1d_intensity = pg.PlotWidget(plotItem=pi_hist1d_intensity)
+        pw_hist1d_lifetime = pg.PlotWidget(plotItem=pi_hist1d_lifetime)
+        pw_timetrace = pg.PlotWidget(plotItem=pi_timetrace)
+        pw_phasor = pg.PlotWidget(plotItem=pi_phasor)
 
-        roi = pg.RectROI((0, 0), (10, 10))
-        roi.sigRegionChangeFinished.connect(self.newfunction)
-        # creating image view object
-        imv = ImageView(view=plot, roi=roi)
-        imv.setImage(img_intensity)
-        imv.setColorMap(cmap)
-        # imv.ui.roiBtn.clicked.connect(self.newfunction)
+        # Add the widgets onto the QGridLayout
+        self.grid_main.addWidget(imv_intensity, 0, 0)
+        self.grid_main.addWidget(imv_lifetime, 0, 1)
+        self.grid_main.addWidget(imv_gated, 0, 2)
+        self.grid_main.addWidget(imv_hist2d, 0, 3)
+        self.grid_main.addWidget(pw_hist1d_intensity, 1, 0)
+        self.grid_main.addWidget(pw_hist1d_lifetime, 1, 1)
+        self.grid_main.addWidget(pw_timetrace, 1, 2)
+        self.grid_main.addWidget(pw_phasor, 1, 3)
 
-        # adding label in the layout
-        self.grid_main.addWidget(imv, 0, 0)
+        # Process Data
+        hist1d_intensity_y, hist1d_intensity_x = np.histogram(img_intensity, bins=100)
+        hist1d_lifetime_y, hist1d_lifetime_x = np.histogram(img_lifetime, bins=100)
+        timetrace_y = np.sum(data['TCSPC'], axis=0)
+        img_hist2d, x, y = np.histogram2d(np.squeeze(data['tau']), np.squeeze(data['intensity']), bins=100)
 
-        '''Fig. 2: FLIM Image'''
-        # Add Plot item to show axis labels
-        plot = pg.PlotItem()
-        plot.setLabel(axis='left', text='Y-axis')
-        plot.setLabel(axis='bottom', text='X-axis')
-        plot.setTitle('Fig. 2: FLIM Image')
+        # Display Data
+        imv_intensity.setImage(img_intensity)
+        imv_lifetime.setImage(img_lifetime)
+        imv_gated.setImage(img_intensity) # todo
+        imv_hist2d.setImage(img_hist2d)
 
-        # creating image view object
-        imv2 = ImageView(view=plot)
-        imv2.setImage(img_tau)
-        imv2.setColorMap(cmap)
-        imv2.roi.sigRegionChangeFinished.connect(self.newfunction)
+        # Plot Graphs
+        pi_hist1d_intensity.plot(hist1d_intensity_x, hist1d_intensity_y, stepMode=True, fillLevel=0, brush=(0, 0, 255, 80))
+        pi_hist1d_lifetime.plot(hist1d_lifetime_x, hist1d_lifetime_y, stepMode=True, fillLevel=0, brush=(0, 0, 255, 80))
+        pi_timetrace.plot(timetrace_y)
 
-        self.grid_main.addWidget(imv2, 0, 1)
+        # Draw Movable Limits for Gating
+        vbar_tmin = pg.InfiniteLine(0, movable=True, angle=90)
+        pi_timetrace.addItem(vbar_tmin)
+        vbar_tmax = pg.InfiniteLine(len(curve_timetrace), movable=True, angle=90)
+        pi_timetrace.addItem(vbar_tmax)
 
-        # todo: connect two ROIs
-        imv.ui.roiBtn.clicked.connect(imv2.ui.roiBtn.click)
-        imv2.ui.roiBtn.hide()
-        # imv2.ui.roiBtn.clicked.connect(imv.ui.roiBtn.click) #todo: block signal
-
-        # adding label in the layout
-
-        '''Fig. 3: Gated Image'''
-        # Add Plot item to show axis labels
-        plot = pg.PlotItem()
-        plot.setLabel(axis='left', text='Y-axis')
-        plot.setLabel(axis='bottom', text='X-axis')
-        plot.setTitle('Fig. 3: Gated Image')
-
-        # creating image view object
-        imv2 = ImageView(view=plot)
-        imv2.setImage(img_tau)
-        imv2.setColorMap(cmap)
-
-        self.grid_main.addWidget(imv2, 0, 2)
-
-        '''Fig. 4: Intensity Histogram'''
-        # Add Plot item to show axis labels
-        plot = pg.PlotItem()
-        wgt = pg.PlotWidget(plotItem=plot)
-
-        y, x = np.histogram(img_intensity, bins=100)
-        plot.plot(x, y, stepMode=True, fillLevel=0, brush=(0, 0, 255, 80))
-
-        plot.setLabel(axis='left', text='Y-axis')
-        plot.setLabel(axis='bottom', text='X-axis')
-        plot.setTitle('Fig. 4: Intensity Histogram')
-
-        # adding label in the layout
-        self.grid_main.addWidget(wgt, 1, 0)
-
-        '''Fig. 5: Lifetime Histogram'''
-        # Add Plot item to show axis labels
-        plot = pg.PlotItem()
-        wgt = pg.PlotWidget(plotItem=plot)
-        y, x = np.histogram(img_tau, bins=100)
-        plot.plot(x, y, stepMode=True, fillLevel=0, brush=(0, 0, 255, 80))
-
-        plot.setLabel(axis='left', text='Y-axis')
-        plot.setLabel(axis='bottom', text='X-axis')
-        plot.setTitle('Fig. 5: Lifetime Histogram')
-
-        # adding label in the layout
-        self.grid_main.addWidget(wgt, 1, 1)
-
-        '''Fig. 6: Fluorescence Time Trace'''
-        # Add Plot item to show axis labels
-        plot = pg.PlotItem()
-        wgt = pg.PlotWidget(plotItem=plot)
-
-        curve_timetrace.shape
-        plot.plot(curve_timetrace)
-
-        plot.setLabel(axis='left', text='Y-axis')
-        plot.setLabel(axis='bottom', text='X-axis')
-        plot.setTitle('Fig. 6: Fluorescence Time Trace')
-
-        # adding label in the layout
-        self.grid_main.addWidget(wgt, 1, 2)
-
-        '''Fig. 7: Intensity vs Lifetime Histogram'''
-        # Add Plot item to show axis labels
-        # Add Plot item to show axis labels
-        plot = pg.PlotItem()
-        plot.setLabel(axis='left', text='Y-axis')
-        plot.setLabel(axis='bottom', text='X-axis')
-        plot.setTitle('Fig. 3: Gated Image')
-
-        H, x, y = np.histogram2d(np.squeeze(data['tau']), np.squeeze(data['intensity']), bins=100)
-
-        # creating image view object
-        imv2 = ImageView(view=plot)
-        imv2.setImage(H)
-        imv2.setColorMap(cmap)
-
-        # adding label in the layout
-        self.grid_main.addWidget(imv2, 0, 3)
-
-        '''Fig. 8: Phasor'''
-        # Add Plot item to show axis labels
-        plot = pg.PlotItem()
-        wgt = pg.PlotWidget(plotItem=plot)
-
-        plot.setLabel(axis='left', text='Y-axis')
-        plot.setLabel(axis='bottom', text='X-axis')
-        plot.setTitle('Fig. 8: Phasor')
-
-        # adding label in the layout
-        self.grid_main.addWidget(wgt, 1, 3)
-
-
-
-        # '''Fig. 5: Lifetime Histogram'''
-        # # Add Plot item to show axis labels
-        # plot = pg.PlotItem()
-        # wgt = pg.PlotWidget(plotItem=plot)
-        #
-        # plot.setLabel(axis='left', text='Y-axis')
-        # plot.setLabel(axis='bottom', text='X-axis')
-        # plot.setTitle('Fig. 5: Lifetime Histogram')
-        #
-        # # adding label in the layout
-        # self.grid_main.addWidget(wgt, 0, 0)
-        #
-        # '''Fig. 5: Lifetime Histogram'''
-        # # Add Plot item to show axis labels
-        # plot = pg.PlotItem()
-        # wgt = pg.PlotWidget(plotItem=plot)
-        #
-        # plot.setLabel(axis='left', text='Y-axis')
-        # plot.setLabel(axis='bottom', text='X-axis')
-        # plot.setTitle('Fig. 5: Lifetime Histogram')
-        #
-        # # adding label in the layout
-        # self.grid_main.addWidget(wgt, 1, 2)
+        # Connect Signals
+        imv_intensity.ui.roiBtn.clicked.connect(imv_lifetime.ui.roiBtn.click)
+        imv_intensity.ui.roiBtn.clicked.connect(imv_gated.ui.roiBtn.click)
 
     def newfunction(self):
         print('new')
