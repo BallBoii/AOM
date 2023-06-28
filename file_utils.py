@@ -1,5 +1,5 @@
 import os, yaml, scipy.io, pickle, csv
-from PyQt6 import QtGui
+from PyQt6 import QtGui, QtWidgets
 
 
 def dict2yaml(expt_dict, filename='exp_params.yaml'):
@@ -94,4 +94,4 @@ def csv2table(qtable, filename):
 
         for row in range(len(table)):
             for col in range(len(table[row])):
-                qtable.setItem(row, col, QtGui.QTableWidgetItem(table[row][col]))
+                qtable.setItem(row, col, QtWidgets.QTableWidgetItem(table[row][col]))

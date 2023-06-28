@@ -17,6 +17,7 @@ import experiments as exp
 import mainexp as mainwindow
 import mainexp_widgets
 
+import qdarkstyle
 
 def my_excepthook(type, value, tback):
     sys.__excepthook__(type, value, tback)
@@ -1345,11 +1346,11 @@ class MainExp_GUI(QtWidgets.QMainWindow, mainwindow.Ui_MainWindow):
                     exptype = self.cbox_exp_name.currentText()
                     if exptype in self.default_params_disp.keys():
                         if y in self.default_params_disp[exptype]:
-                            child0.setCheckState(2)
+                            child0.setCheckState(QtCore.Qt.CheckState.Checked)
                         else:
-                            child0.setCheckState(0)
+                            child0.setCheckState(QtCore.Qt.CheckState.Unchecked)
                     else:
-                        child0.setCheckState(0)
+                        child0.setCheckState(QtCore.Qt.CheckState.Unchecked)
                 else:
                     if y in chkbox_state.keys():
                         child0.setCheckState(chkbox_state[y])
@@ -1388,9 +1389,9 @@ class MainExp_GUI(QtWidgets.QMainWindow, mainwindow.Ui_MainWindow):
                 param = item_param.text()
 
                 if param in args:
-                    item_param.setCheckState(2)
+                    item_param.setCheckState(QtCore.Qt.CheckState.Checked)
                 else:
-                    item_param.setCheckState(0)
+                    item_param.setCheckState(QtCore.Qt.CheckState.Unchecked)
 
         self.update_params_label()
 
@@ -1405,7 +1406,7 @@ class MainExp_GUI(QtWidgets.QMainWindow, mainwindow.Ui_MainWindow):
                 sweep_var = [self.var1_name.currentText()]
                 if self.chkbx_2dexp.isChecked():
                     sweep_var.append(self.var2_name.currentText())
-                if item_param.checkState() and param not in sweep_var:
+                if item_param.checkState() == QtCore.Qt.CheckState.Checked and param not in sweep_var:
                     val = self.exp_params[paramtype][param]
                     if label_str:
                         label_str += '\n'
@@ -1468,6 +1469,8 @@ class MainExp_GUI(QtWidgets.QMainWindow, mainwindow.Ui_MainWindow):
         self.dbl_confocal_z_stop.setEnabled(bool(b))
 
     def confocal_start(self):
+        if self.btn_map_select.isChecked():
+            self.btn_map_select.click()
         if self.task_handler.everything_finished():
             if not self.thread_terminal.isRunning():
                 self.label_terminal_cmdlog.append('confocal(%.2f, %.2f, %d, %.2f, %.2f, %d, %.5f, avg=%d)' %
@@ -1563,7 +1566,7 @@ class MainExp_GUI(QtWidgets.QMainWindow, mainwindow.Ui_MainWindow):
 
     def map_load(self):
         documents_path = os.path.expanduser(os.path.join('~', 'Documents', 'data_mat'))
-        fd = QtGui.QFileDialog(directory=documents_path)
+        fd = QtWidgets.QFileDialog(directory=documents_path)
         targetfile = fd.getOpenFileName(filter='mat files (*.mat)')
 
         targetfile = targetfile[0]
@@ -1654,7 +1657,7 @@ class MainExp_GUI(QtWidgets.QMainWindow, mainwindow.Ui_MainWindow):
 
     def map_clicked_pos(self, event):
         pos = event.scenePos()
-        if self.plt_map.sceneBoundingRect().contains(pos) and event.button() == 1:
+        if self.plt_map.sceneBoundingRect().contains(pos) and event.button() == QtCore.Qt.MouseButton.LeftButton:
             mousePoint = self.vb_map.mapSceneToView(pos)
             self.dbl_tracker_xpos.setValue(mousePoint.x())
             self.dbl_tracker_ypos.setValue(mousePoint.y())
@@ -2493,9 +2496,9 @@ class MainExp_GUI(QtWidgets.QMainWindow, mainwindow.Ui_MainWindow):
         numrows = self.table_nvlist.rowCount()
         self.table_nvlist.setRowCount(numrows+1)
 
-        self.table_nvlist.setItem(numrows, 0, QtGui.QTableWidgetItem('%.3f' % self.dbl_tracker_xpos.value()))
-        self.table_nvlist.setItem(numrows, 1, QtGui.QTableWidgetItem('%.3f' % self.dbl_tracker_ypos.value()))
-        self.table_nvlist.setItem(numrows, 2, QtGui.QTableWidgetItem('%.3f' % self.dbl_tracker_zpos.value()))
+        self.table_nvlist.setItem(numrows, 0, QtWidgets.QTableWidgetItem('%.3f' % self.dbl_tracker_xpos.value()))
+        self.table_nvlist.setItem(numrows, 1, QtWidgets.QTableWidgetItem('%.3f' % self.dbl_tracker_ypos.value()))
+        self.table_nvlist.setItem(numrows, 2, QtWidgets.QTableWidgetItem('%.3f' % self.dbl_tracker_zpos.value()))
 
         self.nvlist_update()
 
@@ -2504,15 +2507,15 @@ class MainExp_GUI(QtWidgets.QMainWindow, mainwindow.Ui_MainWindow):
         self.nvlist_update()
 
     def nvlist_save(self):
-        fd = QtGui.QFileDialog(directory=os.path.expanduser(os.path.join('~', 'Documents')))
-        fd.setAcceptMode(1)
+        fd = QtWidgets.QFileDialog(directory=os.path.expanduser(os.path.join('~', 'Documents')))
+        fd.setAcceptMode(QtWidgets.QFileDialog.AcceptMode.AcceptSave)
 
         targetfile = fd.getSaveFileName(filter='csv file (*.csv)')[0]
         if targetfile != '':
             file_utils.table2csv(self.table_nvlist, targetfile)
 
     def nvlist_load(self):
-        fd = QtGui.QFileDialog(directory=os.path.expanduser(os.path.join('~', 'Documents')))
+        fd = QtWidgets.QFileDialog(directory=os.path.expanduser(os.path.join('~', 'Documents')))
         targetfile = fd.getOpenFileName(filter='csv files (*.csv)')[0]
 
         if targetfile != '':
@@ -2541,9 +2544,9 @@ class MainExp_GUI(QtWidgets.QMainWindow, mainwindow.Ui_MainWindow):
         ypos = self.dbl_tracker_ypos.value()
         zpos = self.dbl_tracker_zpos.value()
 
-        self.table_nvlist.setItem(nvref_row, 0, QtGui.QTableWidgetItem('%.3f' % xpos))
-        self.table_nvlist.setItem(nvref_row, 1, QtGui.QTableWidgetItem('%.3f' % ypos))
-        self.table_nvlist.setItem(nvref_row, 2, QtGui.QTableWidgetItem('%.3f' % zpos))
+        self.table_nvlist.setItem(nvref_row, 0, QtWidgets.QTableWidgetItem('%.3f' % xpos))
+        self.table_nvlist.setItem(nvref_row, 1, QtWidgets.QTableWidgetItem('%.3f' % ypos))
+        self.table_nvlist.setItem(nvref_row, 2, QtWidgets.QTableWidgetItem('%.3f' % zpos))
 
         self.nvlist_update()
 
@@ -2568,9 +2571,9 @@ class MainExp_GUI(QtWidgets.QMainWindow, mainwindow.Ui_MainWindow):
                 old_y = float(self.table_nvlist.item(nvind2, 1).text())
                 old_z = float(self.table_nvlist.item(nvind2, 2).text())
 
-                self.table_nvlist.setItem(nvind2, 0, QtGui.QTableWidgetItem('%.3f' % (old_x + offset_x)))
-                self.table_nvlist.setItem(nvind2, 1, QtGui.QTableWidgetItem('%.3f' % (old_y + offset_y)))
-                self.table_nvlist.setItem(nvind2, 2, QtGui.QTableWidgetItem('%.3f' % (old_z + offset_z)))
+                self.table_nvlist.setItem(nvind2, 0, QtWidgets.QTableWidgetItem('%.3f' % (old_x + offset_x)))
+                self.table_nvlist.setItem(nvind2, 1, QtWidgets.QTableWidgetItem('%.3f' % (old_y + offset_y)))
+                self.table_nvlist.setItem(nvind2, 2, QtWidgets.QTableWidgetItem('%.3f' % (old_z + offset_z)))
 
             self.nvlist_update()
 
@@ -2609,7 +2612,7 @@ class MainExp_GUI(QtWidgets.QMainWindow, mainwindow.Ui_MainWindow):
 
     def nvlist_scripts_add(self):
         documents_path = os.path.expanduser(os.path.join('~', 'Documents', 'exp_scripts'))
-        fd = QtGui.QFileDialog(directory=documents_path)
+        fd = QtWidgets.QFileDialog(directory=documents_path)
         targetfile = fd.getOpenFileName(filter='Python Scripts (*.py)')[0]
 
         if targetfile != '':
@@ -2623,7 +2626,7 @@ class MainExp_GUI(QtWidgets.QMainWindow, mainwindow.Ui_MainWindow):
 
     def nvlist_calscripts_add(self):
         documents_path = os.path.expanduser(os.path.join('~', 'Documents', 'exp_scripts'))
-        fd = QtGui.QFileDialog(directory=documents_path)
+        fd = QtWidgets.QFileDialog(directory=documents_path)
         targetfile = fd.getOpenFileName(filter='Python Scripts (*.py)')[0]
 
         if targetfile != '':
@@ -2722,7 +2725,7 @@ class MainExp_GUI(QtWidgets.QMainWindow, mainwindow.Ui_MainWindow):
 
     def pb_load_params(self):
         documents_path = os.path.expanduser(os.path.join('~', 'Documents', 'data_mat'))
-        fd = QtGui.QFileDialog(directory=documents_path)
+        fd = QtWidgets.QFileDialog(directory=documents_path)
         targetfile = fd.getOpenFileName(filter='yaml files (*.yaml)')
 
         targetfile = targetfile[0]
@@ -2835,15 +2838,15 @@ class MainExp_GUI(QtWidgets.QMainWindow, mainwindow.Ui_MainWindow):
             self.log(str(e))
 
     def pbcustom_save(self):
-        fd = QtGui.QFileDialog(directory=os.path.expanduser(os.path.join('~', 'Documents')))
-        fd.setAcceptMode(1)
+        fd = QtWidgets.QFileDialog(directory=os.path.expanduser(os.path.join('~', 'Documents')))
+        fd.setAcceptMode(QtWidgets.QFileDialog.AcceptMode.AcceptSave)
 
         targetfile = fd.getSaveFileName(filter='csv file (*.csv)')[0]
         if targetfile != '':
             file_utils.table2csv(self.table_pbcustom, targetfile)
 
     def pbcustom_load(self):
-        fd = QtGui.QFileDialog(directory=os.path.expanduser(os.path.join('~', 'Documents')))
+        fd = QtWidgets.QFileDialog(directory=os.path.expanduser(os.path.join('~', 'Documents')))
         targetfile = fd.getOpenFileName(filter='csv files (*.csv)')[0]
 
         if targetfile != '':
@@ -2964,6 +2967,8 @@ def main(dualgalvo=False):
     if dualgalvo:
         form2 = MainExp_GUI(galvo2=True)
         form2.show()
+
+    # app.setStyleSheet(qdarkstyle.load_stylesheet())
 
     # form.chkbox_tracktime.setChecked(False)
     # form.chkboxsave.setChecked(False)
