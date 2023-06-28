@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>2216</width>
-    <height>784</height>
+    <height>809</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -229,6 +229,46 @@
     <property name="alignment">
      <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignVCenter</set>
     </property>
+   </widget>
+   <widget class="QWidget" name="horizontalLayoutWidget">
+    <property name="geometry">
+     <rect>
+      <x>20</x>
+      <y>730</y>
+      <width>1861</width>
+      <height>31</height>
+     </rect>
+    </property>
+    <layout class="QHBoxLayout" name="horizontalLayout_2">
+     <item>
+      <widget class="QCheckBox" name="chkbx_filter_intensity">
+       <property name="text">
+        <string>Intensity Filter</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QCheckBox" name="chkbx_filter_lifetime">
+       <property name="text">
+        <string>Lifetime Filter</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QCheckBox" name="chkbx_filter_time">
+       <property name="text">
+        <string>Time Gate</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QCheckBox" name="chkbx_filter_phasor">
+       <property name="text">
+        <string>Phasor Filter</string>
+       </property>
+      </widget>
+     </item>
+    </layout>
    </widget>
   </widget>
   <widget class="QMenuBar" name="menubar">
