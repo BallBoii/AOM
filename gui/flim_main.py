@@ -274,14 +274,14 @@ class MainFLIM(QtWidgets.QMainWindow, mainwindow.Ui_MainWindow):
         self.vbar_tmin.setBounds((0, self.gated_imax))
 
     def update_filter_intensity(self):
-        self.filter_intensity_min = round(self.vbar_intensity_min.getXPos())
-        self.filter_intensity_max = round(self.vbar_intensity_max.getXPos())
+        self.filter_intensity_min = self.vbar_intensity_min.getXPos()
+        self.filter_intensity_max = self.vbar_intensity_max.getXPos()
 
         self.update_gated()
 
     def update_filter_lifetime(self):
-        self.filter_lifetime_min = round(self.vbar_lifetime_min.getXPos())
-        self.filter_lifetime_max = round(self.vbar_lifetime_max.getXPos())
+        self.filter_lifetime_min = self.vbar_lifetime_min.getXPos()
+        self.filter_lifetime_max = self.vbar_lifetime_max.getXPos()
         self.update_gated()
 
     def update_gated(self):
