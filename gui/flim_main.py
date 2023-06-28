@@ -179,15 +179,19 @@ class MainFLIM(QtWidgets.QMainWindow, mainwindow.Ui_MainWindow):
         self.imv_gated.roi.sigRegionChangeFinished.connect(lambda: self.roiChangeFinished(self.imv_gated))
 
         self.vbar_tmin.sigPositionChanged.connect(self.update_tgate)
-        self.vbar_tmin.sigPositionChangeFinished.connect(self.update_gate_tmin)
         self.vbar_tmax.sigPositionChanged.connect(self.update_tgate)
-        self.vbar_tmax.sigPositionChangeFinished.connect(self.update_gate_tmax)
+        self.vbar_tmin.sigPositionChangeFinished.connect(lambda: self.vbar_tmax.setBounds((self.gated_imin, self.nbins)))
+        self.vbar_tmax.sigPositionChangeFinished.connect(lambda: self.vbar_tmin.setBounds((0, self.gated_imax)))
 
         self.vbar_intensity_min.sigPositionChanged.connect(self.update_filter_intensity)
         self.vbar_intensity_max.sigPositionChanged.connect(self.update_filter_intensity)
+        self.vbar_intensity_min.sigPositionChangeFinished.connect(lambda: self.vbar_intensity_max.setBounds((self.filter_intensity_min, hist1d_intensity_x[-1])))
+        self.vbar_intensity_max.sigPositionChangeFinished.connect(lambda: self.vbar_intensity_min.setBounds((hist1d_intensity_x[0], self.filter_intensity_max)))
 
         self.vbar_lifetime_min.sigPositionChanged.connect(self.update_filter_lifetime)
         self.vbar_lifetime_max.sigPositionChanged.connect(self.update_filter_lifetime)
+        self.vbar_lifetime_min.sigPositionChangeFinished.connect(lambda: self.vbar_lifetime_max.setBounds((self.filter_lifetime_min, hist1d_lifetime_x[-1])))
+        self.vbar_lifetime_max.sigPositionChangeFinished.connect(lambda: self.vbar_lifetime_min.setBounds((hist1d_lifetime_x[0], self.filter_lifetime_max)))
 
         self.chkbx_filter_intensity.setChecked(False)
         self.vbar_intensity_min.setVisible(False)
@@ -266,12 +270,6 @@ class MainFLIM(QtWidgets.QMainWindow, mainwindow.Ui_MainWindow):
         self.gated_imax = round(self.vbar_tmax.getXPos())
 
         self.update_gated()
-
-    def update_gate_tmin(self):
-        self.vbar_tmax.setBounds((self.gated_imin, self.data['TCSPC'].shape[1]))
-
-    def update_gate_tmax(self):
-        self.vbar_tmin.setBounds((0, self.gated_imax))
 
     def update_filter_intensity(self):
         self.filter_intensity_min = self.vbar_intensity_min.getXPos()
