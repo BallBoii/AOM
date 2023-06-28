@@ -66,6 +66,8 @@ class DSG836A(GPIBdev.GPIBdev):
 
     def set_iqmod(self, b):
         self.gpib_write(':IQ:MOD:STAT %d' % b)
+        if b:
+            self.gpib_write(':IQ:MOD EXT')
         self.set_mod(b)
 
     def get_iqmod(self):
