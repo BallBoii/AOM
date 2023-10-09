@@ -3,16 +3,82 @@
 from instruments import GPIBdev
 # import GPIBdev # use when running this as a main
 
+class SMBV100B(GPIBdev.GPIBdev):
+
+    def __init__(self, dev, ch=1):
+
+        self.pow_min = -110
+        self.pow_max = 20
+        self.freq_min = 9e3
+        self.freq_max = 3.0e9
+
+
+    def set_freq(self, freq):
+        # set generator frequency in Hz
+        if (freq < self.freq_min) or (freq > self.freq_max):
+            print('Freq Range Error! Tried to set to %f' % freq)
+        else:
+            self.gpib_write('SOUR:FREQ %.6 Hz' % freq)
+
+    def get_freq(self):
+        return float(self.gpib_query('SOUR:FREQ:CW?'))
+
+    def set_pow(self, pow):
+        # set generator power in dBm
+        if (pow < self.pow_min) or (pow > self.pow_max):
+            print('Power Range Error! Tried to set to %f' % pow)
+        else:
+            self.gpib_write('SOUR:POW %.2f' % pow)
+
+    def set_mod(self, b):
+        # set_mod not available for RhodeSchwarz. Need to define a function for compatibility with mainexp
+        pass
+
+    def get_pow(self):
+        return float(self.gpib_query('SOUR:POW?'))
+
+    def set_output(self, b):
+        self.gpib_write('OUTP:STAT %d' % b)
+
+    def get_output(self):
+        return int(self.gpib_query('OUTP?' % self.ch))
+
+    def set_alc(self, b):
+        if type(b) == int:
+            self.gpib_write('SOUR%d:POW:ALC %d' % (self.ch, b))
+        else:
+            self.gpib_write('SOUR%d:POW:ALC %d' % (self.ch, b))
+
+    def set_pulsemod(self, b):
+        self.gpib_write('SOUR%d:PULM:STAT %d' % (self.ch, b))
+        self.gpib_write('SOUR%d:PULM:POL NORM' % self.ch)
+
+    def get_pulsemod(self):
+        return int(self.gpib_query('SOUR%d:PULM:STAT?' % self.ch))
+
+    def set_pulsemod_src(self, src):
+        # Set Pulse Modulation Source: EXT, INT
+        self.gpib_write('SOUR%d:PULM:SRC %s' % (self.ch, src))
+
+    def set_pulsemod_src(self):
+        return self.gpib_query('SOUR%d:PULM:SRC?' % self.ch)
+
+    def set_iqmod(self, b):
+        pass
+
+    def get_iqmod(self):
+        return 0
+
 
 class GenericSource(GPIBdev.GPIBdev):
     'Dual Channel Signal Generator'
     def __init__(self, dev, ch=1):
         super().__init__(dev)
 
-        self.pow_min = None
-        self.pow_max = None
-        self.freq_min = None
-        self.freq_max = None
+        self.pow_min = -110
+        self.pow_max = 20
+        self.freq_min = 9e3
+        self.freq_max = 3.0e9
 
         self.ch = ch
         self.set_ch(ch)
@@ -43,7 +109,11 @@ class GenericSource(GPIBdev.GPIBdev):
 
     def set_mod(self, b):
         # set_mod not available for RhodeSchwarz. Need to define a function for compatibility with mainexp
-        pass
+        #pass
+        self.gpib_write(':IQ:STAT %d' % b)
+
+    def get_mod(self):
+        return int(self.gpib_query(':IQ:STAT?'))
 
     def get_pow(self):
         return float(self.gpib_query('SOUR%d:POW?' % self.ch))
@@ -75,10 +145,13 @@ class GenericSource(GPIBdev.GPIBdev):
         return self.gpib_query('SOUR%d:PULM:SRC?' % self.ch)
 
     def set_iqmod(self, b):
-        pass
+        self.gpib_write('MOD:STAT %d' % b)
+        if b:
+            self.gpib_write('IQ:SOURce ANALog')
+        self.set_mod(b)
 
     def get_iqmod(self):
-        return 0
+        return int(self.gpib_query('MOD:STAT?'))
 
 
 class SMATE200A(GenericSource):
