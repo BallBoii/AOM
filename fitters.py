@@ -13,6 +13,8 @@ class Fitter:
                               'Gaussian': fit_Gaussian(),
                               'Lorentzian': fit_Lorentzian(),
                               'tracker': fit_tracker(),
+                              'Zeeman': fit_Zeeman(),
+                              'hyprefine': fit_hyperfine4(),
                               'sin': fit_sin(),
                               'n15': fit_n15(),
                               'exp': fit_exp(),
@@ -234,6 +236,120 @@ class fit_Gaussian(GenericFit):
         self.bounds = bounds
 
 
+class fit_Zeeman(GenericFit):
+    # 2-Gaussian Fits for Zeeman splitting
+    def __init__(self, data=None, xvals=None):
+        super().__init__(data, xvals)
+
+
+    def func(self):
+        return '(amp1 * np.exp(-(x - x01)**2 / (2*sigma1**2)) +\
+                (amp2 * np.exp(-(x - x02)**2 / (2*sigma2**2)) + offset'
+
+    def model(self, x, amp1, x01, sigma1, amp2, x02, sigma2, offset):
+        func = amp1 * np.exp(-(x - x01) ** 2 / (2 * sigma1 ** 2)) + amp2 * np.exp(-(x - x02) ** 2 / (2 * sigma2 ** 2)) + offset
+        return func
+
+    def get_guess(self):
+
+        # from scipy.ndimage import gaussian_filter
+        # from scipy.signal import find_peaks
+        # from scipy.signal import peak_widths
+        #
+        # f = gaussian_filter(self.data, sigma=3, order=0)
+        # f = gaussian_filter(f, sigma=2, order=0)
+        # peaks, _h = find_peaks(-f, height=-(f.mean() - f.std()))
+        #
+        # offset = np.mean(self.data)
+        # [amp1, amp2] = [-(i + offset) for i in _h['peak_heights']]
+        # [x01, x02] = [self.xvals[i] for i in peaks]
+        # [sigma1, sigma2] = [i*(self.xvals[1]-self.xvals[0]) for i in peak_widths(f, peaks)[1]]
+        # self.guess = [amp1, x01, sigma1, amp2, x02, sigma2, offset]
+
+        amp = self.data.min() - self.data.max()  # this gives a negative sign by default
+
+        x1 = self.xvals[:len(self.xvals)//2]
+        y1 = self.data[:len(self.xvals)//2]
+        x2 = self.xvals[len(self.xvals)//2:]
+        y2 = self.data[len(self.xvals)//2:]
+
+        x01 = x1[np.argmin(y1)]
+        x02 = x2[np.argmin(y2)]
+
+        self.guess = [amp, x01, 20e6, amp, x02, 20e6, 1]
+        self.set_bounds()
+        return self.guess
+
+    def set_bounds(self, bounds=None):
+        xmin = self.xvals.min()
+        xmax = self.xvals.max()
+        xmid = (xmin+xmax)/2
+
+        if bounds is None:
+            bounds = ([-np.inf, xmin, 0, -np.inf, xmid, 0, 0],
+                      [0, xmid, 50e6, 0, xmax, 50e6, np.inf]) # todo: make upperbound sigma more generic
+        self.bounds = bounds
+
+
+class fit_hyperfine4(GenericFit):
+    # 4-Gaussian Fits
+    def __init__(self, data=None, xvals=None):
+        super().__init__(data, xvals)
+
+    def func(self):
+        return 'amp1 * np.exp(-(x - x01) ** 2 / (2 * sigma1 ** 2)) +\
+                amp2 * np.exp(-(x - x02) ** 2 / (2 * sigma2 ** 2)) +\
+                amp3 * np.exp(-(x - x03) ** 2 / (2 * sigma3 ** 2)) +\
+                amp4 * np.exp(-(x - x04) ** 2 / (2 * sigma4 ** 2)) + offset'
+
+    def model(self, x, amp1, x01, sigma1, amp2, x02, sigma2, amp3, x03, sigma3, amp4, x04, sigma4, offset):
+        func = amp1 * np.exp(-(x - x01) ** 2 / (2 * sigma1 ** 2)) +\
+                amp2 * np.exp(-(x - x02) ** 2 / (2 * sigma2 ** 2)) +\
+                amp3 * np.exp(-(x - x03) ** 2 / (2 * sigma3 ** 2)) +\
+                amp4 * np.exp(-(x - x04) ** 2 / (2 * sigma4 ** 2)) + offset
+        return func
+
+    def get_guess(self):
+
+        from scipy.ndimage import gaussian_filter
+        from scipy.signal import find_peaks
+        from scipy.signal import peak_widths
+
+        f = gaussian_filter(self.data, sigma=3, order=0)
+        f = gaussian_filter(f, sigma=2, order=0)
+        peaks, _h = find_peaks(-f, height=-(f.mean() - f.std()))
+
+        offset = np.mean(self.data)
+        [amp1, amp2, amp3, amp4] = [-(i + offset) for i in _h['peak_heights']]
+        [x01, x02, x03, x04] = [self.xvals[i] for i in peaks]
+        [sigma1, sigma2, sigma3, sigma4] = [i*(self.xvals[1]-self.xvals[0]) for i in peak_widths(f, peaks)[1]]
+        self.guess = [amp1, x01, sigma1, amp2, x02, sigma2, amp3, x03, sigma3, amp4, x04, sigma4, offset]
+
+        self.set_bounds()
+        return self.guess
+
+    def set_bounds(self, bounds=None):
+
+        from scipy.ndimage import gaussian_filter
+        from scipy.signal import find_peaks
+
+        f = gaussian_filter(self.data, sigma=3, order=0)
+        f = gaussian_filter(f, sigma=2, order=0)
+        peaks, _h = find_peaks(-f, height=-(f.mean() - f.std()))
+
+        [x01, x02, x03, x04] = [self.xvals[i] for i in peaks]
+
+        if bounds is None:
+            bounds = ([-np.inf, x01 * (1 - 0.001), 0, \
+                       -np.inf, x01, 0, \
+                       -np.inf, x02, 0, \
+                       -np.inf, x03, 0, 0],
+                      [0, x02, 50e6, \
+                       0, x03, 50e6, \
+                       0, x04, 50e6, \
+                       0, x04 * (1 + 0.001), 50e6, np.inf])  # todo: make upperbound sigma more generic
+        self.bounds = bounds
+
 class fit_tracker(GenericFit):
     '''
     currently used by the tracker to find the center of the NV using PL
@@ -325,6 +441,7 @@ class fit_Lorentzian(GenericFit):
             bounds=([-np.Inf, -np.Inf, 0, -np.Inf],
                     [np.Inf, np.Inf, np.Inf, np.Inf])
         self.bounds = bounds
+
 
 class fit_Voigt(GenericFit):
     def __init__(self, data=None, xvals=None):
@@ -737,7 +854,7 @@ class fit_nvdepth_peace(fit_xy8):
         gam_n = 2.68 * 1e8
         d_nv = depth
         rho = self.rho*1e27
-        b_rms = sqrt(rho * (mu0 * hbar * gam_n / 4 / np.pi) ** 2 * (5 * np.pi / 96 / d_nv ** 3))
+        b_rms = np.sqrt(rho * (mu0 * hbar * gam_n / 4 / np.pi) ** 2 * (5 * np.pi / 96 / d_nv ** 3))
 
         return b_rms
 
