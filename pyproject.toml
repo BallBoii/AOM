@@ -20,6 +20,8 @@ dependencies = [
     "qdarkstyle>=3.2.3",
     "pyvisa>=1.16.2",
     "simplejson>=4.1.1",
+    "plotly>=5.0",
+    "PyQt6-WebEngine>=6.4",
 ]
 
 [project.optional-dependencies]
