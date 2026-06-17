@@ -172,12 +172,16 @@ class ScopePanel(QtWidgets.QMainWindow):
         self.status.showMessage("Not connected.")
 
     def _build_connection_group(self):
-        box = QtWidgets.QGroupBox("Connection")
+        box = QtWidgets.QGroupBox("Connection (LAN)")
         form = QtWidgets.QFormLayout(box)
-        self.ed_scope_addr = QtWidgets.QLineEdit("DSOX6004A")
-        self.ed_rigol_addr = QtWidgets.QLineEdit("DSG836")
-        form.addRow("Scope VISA", self.ed_scope_addr)
-        form.addRow("Rigol VISA", self.ed_rigol_addr)
+        # Instruments are on the LAN; enter the IP and the VISA resource string
+        # TCPIP0::<IP>::INSTR is built automatically (see test_instruments_lan.ipynb).
+        self.ed_scope_ip = QtWidgets.QLineEdit("192.168.68.52")
+        self.ed_rigol_ip = QtWidgets.QLineEdit("192.168.68.33")
+        self.ed_scope_ip.setPlaceholderText("e.g. 192.168.68.52")
+        self.ed_rigol_ip.setPlaceholderText("e.g. 192.168.68.33")
+        form.addRow("Scope IP", self.ed_scope_ip)
+        form.addRow("Rigol IP", self.ed_rigol_ip)
         btn = QtWidgets.QPushButton("Connect")
         btn.clicked.connect(self.on_connect)
         form.addRow(btn)
@@ -185,6 +189,17 @@ class ScopePanel(QtWidgets.QMainWindow):
         self.lbl_idn.setWordWrap(True)
         form.addRow(self.lbl_idn)
         return box
+
+    @staticmethod
+    def _visa_resource(ip):
+        """Build a LAN VISA resource string from an IP (or pass through a full
+        resource string if the user typed one)."""
+        ip = ip.strip()
+        if not ip:
+            return ""
+        if "::" in ip:  # already a full VISA resource string
+            return ip
+        return "TCPIP0::%s::INSTR" % ip
 
     def _build_channels_group(self):
         box = QtWidgets.QGroupBox("Channels")
@@ -354,8 +369,8 @@ class ScopePanel(QtWidgets.QMainWindow):
     # ------------------------------------------------------------------
 
     def on_connect(self):
-        scope_addr = self.ed_scope_addr.text().strip()
-        rigol_addr = self.ed_rigol_addr.text().strip()
+        scope_addr = self._visa_resource(self.ed_scope_ip.text())
+        rigol_addr = self._visa_resource(self.ed_rigol_ip.text())
 
         if scope_addr:
             self.scope = DSOX6004A(scope_addr)
