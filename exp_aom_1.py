@@ -57,7 +57,8 @@ DEFAULT_VMIN = 0.0                    # Rigol output-voltage limit, low (V)
 DEFAULT_VMAX = 10.0                   # Rigol output-voltage limit, high (V)
 
 DEFAULT_SIGNAL_IMP = "FIFTy"          # CH1 (photodiode) input impedance
-DEFAULT_SIGNAL_SCALE = 0.5            # CH1 V/div (override with --signal-scale)
+DEFAULT_SIGNAL_SCALE = 0.002         # CH1 V/div (2 mV/div for a ~11 mV laser signal)
+DEFAULT_SIGNAL_OFFSET = 0.006        # CH1 center offset (V) to frame a 0..~11 mV swing
 
 DEFAULT_TRIG_VPP = 3.3                # Rigol CH2 trigger square swing 0..3.3 V
 DEFAULT_TRIG_LEVEL = 1.65            # scope CH2 trigger level (mid of 3.3 V)
@@ -113,6 +114,7 @@ def connect(dg_visa, scope_visa, scope_timeout, vmin=DEFAULT_VMIN, vmax=DEFAULT_
 
 def configure(awg, scope, freq, first_vpp,
               signal_imp=DEFAULT_SIGNAL_IMP, signal_scale=DEFAULT_SIGNAL_SCALE,
+              signal_offset=DEFAULT_SIGNAL_OFFSET,
               trig_vpp=DEFAULT_TRIG_VPP, trig_level=DEFAULT_TRIG_LEVEL,
               trigger_imp=DEFAULT_TRIGGER_IMP, trigger_scale=DEFAULT_TRIGGER_SCALE):
     """Set up the Rigol drive + trigger squares and the CH2-triggered acquisition."""
@@ -125,7 +127,7 @@ def configure(awg, scope, freq, first_vpp,
     # Rigol CH2: fixed 0..trig_vpp square at the same frequency, used as the scope
     # trigger (a clean edge independent of the laser level).
     awg.set_func(TRIGGER_CH, "SQU")
-    awg.set_freq(TRIGGER_CH, freq)
+    awg.set_freq(TRIGGER_CH, 2*freq)
     awg.set_amplitude_wfm(TRIGGER_CH, 0.0, float(trig_vpp))
 
     awg.set_output(1)               # enables OUTP1 and OUTP2 together
@@ -143,7 +145,7 @@ def configure(awg, scope, freq, first_vpp,
         time_position=0.0,
         trigger_level=trig_level,
         signal_scale=signal_scale,
-        signal_offset=0.0,
+        signal_offset=signal_offset,
         trigger_scale=trigger_scale,
         trigger_offset=0.0,
         signal_impedance=signal_imp,
@@ -279,6 +281,8 @@ def parse_args(argv=None):
                    help="CH1 (photodiode) input impedance.")
     p.add_argument("--signal-scale", type=float, default=DEFAULT_SIGNAL_SCALE,
                    help="CH1 vertical scale in V/div.")
+    p.add_argument("--signal-offset", type=float, default=DEFAULT_SIGNAL_OFFSET,
+                   help="CH1 center offset in V (frames a small unipolar signal).")
     p.add_argument("--trig-vpp", type=float, default=DEFAULT_TRIG_VPP,
                    help="Rigol CH2 trigger square swing 0..VPP in volts.")
     p.add_argument("--trig-level", type=float, default=DEFAULT_TRIG_LEVEL,
@@ -313,6 +317,7 @@ def main(argv=None):
     try:
         configure(awg, scope, args.freq, vpp_list[0],
                   signal_imp=args.signal_imp, signal_scale=args.signal_scale,
+                  signal_offset=args.signal_offset,
                   trig_vpp=args.trig_vpp, trig_level=args.trig_level,
                   trigger_imp=args.trigger_imp, trigger_scale=args.trigger_scale)
         x, y = sweep(awg, scope, vpp_list, args.settle, args.freq, navg=DEFAULT_NAVG)
