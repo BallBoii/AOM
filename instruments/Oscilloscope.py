@@ -401,11 +401,22 @@ class DSOX6004A(GPIBdev.GPIBdev):
         """
         self._check_channel(source_channel)
 
-        if wait:
-            return self.ask(":DIGitize CHANnel%d;*OPC?" % source_channel)
-        else:
+        if not wait:
             self.write(":DIGitize CHANnel%d" % source_channel)
             return None
+
+        try:
+            return self.ask(":DIGitize CHANnel%d;*OPC?" % source_channel)
+        except Exception as exc:
+            # Most likely no trigger arrived within inst.timeout. Recover so the
+            # next call starts clean instead of inheriting a busy/blocked state.
+            self.write(":STOP")
+            self.write("*CLS")
+            raise RuntimeError(
+                "Scope DIGitize timed out on CH%d - likely no trigger received "
+                "(check CH2 PulseBlaster edge/level, or use sweep='AUTO' to debug)."
+                % source_channel
+            ) from exc
 
     def read_waveform_ascii(self, source_channel=1, points=1000, digitize_first=True):
         """
