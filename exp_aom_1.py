@@ -49,8 +49,12 @@ DEFAULT_SCOPE_IP = "192.168.68.52"    # Keysight DSO-X 6004A LAN IP
 DEFAULT_VPP_LIST = [3, 6, 9, 10]      # drive square-wave Vpp setpoints (V)
 DEFAULT_SQUARE_FREQ = 1e3             # square-wave frequency (Hz)
 DEFAULT_SCOPE_TIMEOUT = 30000         # scope VISA timeout (ms)
-DEFAULT_SETTLE_S = 0.3                # settle time after each amplitude change (s)
+DEFAULT_SETTLE_S = 0.5                # settle time after each amplitude change (s)
+DEFAULT_NAVG = 8                      # scope running-average depth
 DEFAULT_OUT = "aom_sigmoid.png"
+
+DEFAULT_VMIN = 0.0                    # Rigol output-voltage limit, low (V)
+DEFAULT_VMAX = 10.0                   # Rigol output-voltage limit, high (V)
 
 DEFAULT_SIGNAL_IMP = "FIFTy"          # CH1 (photodiode) input impedance
 DEFAULT_SIGNAL_SCALE = 0.5            # CH1 V/div (override with --signal-scale)
@@ -66,24 +70,26 @@ def set_drive_vpp(awg, vpp):
     """Set the drive square wave to amplitude=Vpp with offset=Vpp/2.
 
     That offset puts the low level at 0 V and the high level at Vpp (a 0->Vpp
-    unipolar square). Written directly via SCPI so we bypass set_amplitude(),
-    which would re-enable the +/-0.354 V output limit and clamp Vpp.
+    unipolar square). set_amplitude() arms the OUTP:VOLLimit safety clamp at the
+    vmin/vmax the DG2102 was constructed with, then writes the Vpp amplitude.
     """
     amp = float(vpp)
-    awg.gpib_write("SOUR%d:VOLT %.3f" % (DRIVE_CH, amp))   # peak-to-peak amplitude
-    awg.set_dc(DRIVE_CH, amp / 2.0)                         # offset = Vpp/2
+    awg.set_amplitude(DRIVE_CH, amp)    # arms vmin/vmax limit + sets peak-to-peak amplitude
+    awg.set_dc(DRIVE_CH, amp / 2.0)     # offset = Vpp/2
 
 
-def connect(dg_visa, scope_visa, scope_timeout):
+def connect(dg_visa, scope_visa, scope_timeout, vmin=DEFAULT_VMIN, vmax=DEFAULT_VMAX):
     """Open both instruments and verify the connection actually succeeded.
 
     GPIBdev only emits a warning (not an exception) when a device is missing,
     so we check `.connected` explicitly and abort with a clear message.
+
+    vmin/vmax set the DG2102 output-voltage safety limit (OUTP:VOLLimit).
     """
     print("DG2102 resource :", dg_visa)
     print("Scope  resource :", scope_visa)
 
-    awg = DG2102(dg_visa)
+    awg = DG2102(dg_visa, vmin=vmin, vmax=vmax)
     scope = DSOX6004A(scope_visa, timeout_ms=scope_timeout)
 
     print("DG2102 connected:", awg.connected)
@@ -142,23 +148,31 @@ def configure(awg, scope, freq, first_vpp,
         sweep="AUTO",
         coupling="DC",
     )
-    scope.set_acquire(acquire_type="AVERage", average_count=8)
+    scope.set_acquire(acquire_type="AVERage", average_count=DEFAULT_NAVG)
     scope.run()
     print("Scope configured. Time range:", scope.ask(":TIMebase:RANGe?"))
 
 
-def sweep(awg, scope, vpp_list, settle_s):
-    """Drive each Vpp setpoint and record the photodiode response (CH1 Vpp)."""
+def sweep(awg, scope, vpp_list, settle_s, freq, navg=DEFAULT_NAVG):
+    """Drive each Vpp setpoint and record the photodiode response (CH1 Vpp).
+
+    Per point we (1) settle the Rigol/AOM, then (2) clear and refill the scope's
+    running average so measure_vpp reflects only the new setpoint -- otherwise the
+    average still holds samples from the previous Vpp and the curve looks jagged.
+    """
     vpp_arr = []
     resp_arr = []
+    refill_s = navg / freq + 0.05   # time to refill the average at this frequency
 
     print("\nStarting sweep over %d setpoints..." % len(vpp_list))
     for vpp in vpp_list:
         # Square: amplitude=vpp, offset=vpp/2 -> swings 0..vpp.
         set_drive_vpp(awg, vpp)
-        time.sleep(settle_s)
+        time.sleep(settle_s)            # Rigol amplitude/range relay + AOM settle
 
-        # measure_vpp re-digitizes internally via the scope's measurement system.
+        scope.write(":CDISplay")        # clear display -> restart the running average
+        time.sleep(refill_s)            # let it refill with new-setpoint data only
+
         resp = scope.measure_vpp(channel=SIGNAL_CHANNEL)
 
         vpp_arr.append(float(vpp))
@@ -253,6 +267,10 @@ def parse_args(argv=None):
                    help="Settle time after each amplitude change, in seconds.")
     p.add_argument("--scope-timeout", type=int, default=DEFAULT_SCOPE_TIMEOUT,
                    help="Scope VISA timeout in ms.")
+    p.add_argument("--vmin", type=float, default=DEFAULT_VMIN,
+                   help="Rigol output-voltage safety limit, low (V).")
+    p.add_argument("--vmax", type=float, default=DEFAULT_VMAX,
+                   help="Rigol output-voltage safety limit, high (V).")
     p.add_argument("--signal-imp", default=DEFAULT_SIGNAL_IMP,
                    choices=["FIFTy", "ONEMeg"],
                    help="CH1 (photodiode) input impedance.")
@@ -278,11 +296,12 @@ def main(argv=None):
     dg_visa = "TCPIP0::%s::INSTR" % args.dg_ip
     scope_visa = "TCPIP0::%s::INSTR" % args.scope_ip
 
-    awg, scope = connect(dg_visa, scope_visa, args.scope_timeout)
+    awg, scope = connect(dg_visa, scope_visa, args.scope_timeout,
+                         vmin=args.vmin, vmax=args.vmax)
     try:
         configure(awg, scope, args.freq, vpp_list[0],
                   signal_imp=args.signal_imp, signal_scale=args.signal_scale)
-        x, y = sweep(awg, scope, vpp_list, args.settle)
+        x, y = sweep(awg, scope, vpp_list, args.settle, args.freq, navg=DEFAULT_NAVG)
         popt = fit_sigmoid(x, y)
         plot(x, y, popt, args.out, show=not args.no_show)
     finally:

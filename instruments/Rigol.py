@@ -76,14 +76,14 @@ class DSG836A(GPIBdev.GPIBdev):
 class DG2102(GPIBdev.GPIBdev):
     'Function/Arbitrary Waveform Generator'
 
-    def __init__(self, dev, timeout=10000):
+    def __init__(self, dev, timeout=10000, vmin=-0.354, vmax=+0.354):
         super().__init__(dev)
         self.inst.timeout = timeout
         self.alias = ''  # alias is pb channel name
 
         # limits of the device
-        self.vmin = -0.354 #todo
-        self.vmax = +0.354
+        self.vmin = vmin
+        self.vmax = vmax
 
     def set_func(self, ch, fun):
         self.gpib_write('SOUR%d:FUNC %s' % (ch, fun))  #set the waveform
