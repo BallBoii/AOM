@@ -534,6 +534,10 @@ class DSOX6004A(GPIBdev.GPIBdev):
         self._check_channel(channel)
         return self.ask_float(":MEASure:VPP? CHANnel%d" % channel)
 
+    def measure_vmax(self, channel=1):
+        self._check_channel(channel)
+        return self.ask_float(":MEASure:VMAX? CHANnel%d" % channel)
+
     def measure_vavg(self, channel=1):
         self._check_channel(channel)
         return self.ask_float(":MEASure:VAVerage? CHANnel%d" % channel)

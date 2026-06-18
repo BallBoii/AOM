@@ -59,10 +59,17 @@ DEFAULT_VMAX = 10.0                   # Rigol output-voltage limit, high (V)
 DEFAULT_SIGNAL_IMP = "FIFTy"          # CH1 (photodiode) input impedance
 DEFAULT_SIGNAL_SCALE = 0.5            # CH1 V/div (override with --signal-scale)
 
+DEFAULT_TRIG_VPP = 3.3                # Rigol CH2 trigger square swing 0..3.3 V
+DEFAULT_TRIG_LEVEL = 1.65            # scope CH2 trigger level (mid of 3.3 V)
+DEFAULT_TRIGGER_IMP = "FIFTy"         # scope CH2 (trigger) input impedance
+DEFAULT_TRIGGER_SCALE = 1.0          # scope CH2 V/div
+
 DRIVE_CH = 1                          # Rigol output channel driving the AOM
+TRIGGER_CH = 2                        # Rigol output channel -> scope CH2 trigger
 SIGNAL_CHANNEL = 1                    # scope channel = photodiode (laser)
-# The photodiode square is locked to the drive, so CH1 triggers itself --
-# no separate trigger channel/cable is needed.
+TRIGGER_CHANNEL = 2                   # scope channel = Rigol trigger square
+# Rigol CH2 emits its own square into scope CH2; the scope triggers on CH2,
+# independent of the laser level. We read CH1 VMAX (laser ON-level peak).
 # ────────────────────────────────────────────────────────────────────────────
 
 
@@ -105,50 +112,46 @@ def connect(dg_visa, scope_visa, scope_timeout, vmin=DEFAULT_VMIN, vmax=DEFAULT_
 
 
 def configure(awg, scope, freq, first_vpp,
-              signal_imp=DEFAULT_SIGNAL_IMP, signal_scale=DEFAULT_SIGNAL_SCALE):
-    """Set up the Rigol square-wave drive and the CH1 self-triggered acquisition."""
-    # Rigol: square wave on the drive channel. Amplitude is set per-point in
-    # sweep(); here we just establish the waveform shape, frequency and output.
+              signal_imp=DEFAULT_SIGNAL_IMP, signal_scale=DEFAULT_SIGNAL_SCALE,
+              trig_vpp=DEFAULT_TRIG_VPP, trig_level=DEFAULT_TRIG_LEVEL,
+              trigger_imp=DEFAULT_TRIGGER_IMP, trigger_scale=DEFAULT_TRIGGER_SCALE):
+    """Set up the Rigol drive + trigger squares and the CH2-triggered acquisition."""
+    # Rigol CH1: AOM drive square. Amplitude is set per-point in sweep(); here we
+    # just establish the waveform shape, frequency and output.
     awg.set_func(DRIVE_CH, "SQU")
     awg.set_freq(DRIVE_CH, freq)
     set_drive_vpp(awg, first_vpp)   # amplitude=Vpp, offset=Vpp/2 -> 0..Vpp
-    awg.set_output(1)
+
+    # Rigol CH2: fixed 0..trig_vpp square at the same frequency, used as the scope
+    # trigger (a clean edge independent of the laser level).
+    awg.set_func(TRIGGER_CH, "SQU")
+    awg.set_freq(TRIGGER_CH, freq)
+    awg.set_amplitude_wfm(TRIGGER_CH, 0.0, float(trig_vpp))
+
+    awg.set_output(1)               # enables OUTP1 and OUTP2 together
     err = awg.get_error()
     if err:
         print("Rigol errors after setup:", err)
 
-    # Scope: CH1 = photodiode (laser). The laser square is locked to the drive,
-    # so we trigger CH1 on itself -- no second cable needed.
-    scope.stop()
-    scope.set_channel(
-        SIGNAL_CHANNEL,
-        scale=signal_scale,         # V/div for the photodiode
-        offset=0.0,
-        coupling="DC",
-        impedance=signal_imp,
-        probe=1.0,
-        bw_limit=False,
-        label="LASER",
-        display=True,
+    # Scope: CH1 = photodiode (laser), CH2 = Rigol trigger square. The helper
+    # configures both channels, hides CH3/CH4, and sets a NORMal edge trigger on
+    # CH2. time_range shows ~2.5 periods so the VMAX measurement is stable.
+    scope.setup_qds_apd_triggered_acquisition(
+        signal_channel=SIGNAL_CHANNEL,
+        trigger_channel=TRIGGER_CHANNEL,
+        time_range=2.5 / freq,
+        time_position=0.0,
+        trigger_level=trig_level,
+        signal_scale=signal_scale,
+        signal_offset=0.0,
+        trigger_scale=trigger_scale,
+        trigger_offset=0.0,
+        signal_impedance=signal_imp,
+        trigger_impedance=trigger_imp,
+        points=1000,
+        acquire_type="AVERage",
+        average_count=DEFAULT_NAVG,
     )
-    # Hide the other channels.
-    for ch in scope.VALID_CHANNELS:
-        if ch != SIGNAL_CHANNEL:
-            scope.channel_on(ch, False)
-
-    # ~2.5 periods on screen so Vpp measures cleanly.
-    scope.set_timebase(time_range=2.5 / freq, position=0.0)
-
-    # Self-trigger on CH1. sweep="AUTO" still acquires when the step is tiny
-    # (bottom of the sigmoid), so measure_vpp always returns a value.
-    scope.set_edge_trigger(
-        source_channel=SIGNAL_CHANNEL,
-        level=0.0,
-        slope="POSitive",
-        sweep="AUTO",
-        coupling="DC",
-    )
-    scope.set_acquire(acquire_type="AVERage", average_count=DEFAULT_NAVG)
     scope.run()
     print("Scope configured. Time range:", scope.ask(":TIMebase:RANGe?"))
 
@@ -173,11 +176,11 @@ def sweep(awg, scope, vpp_list, settle_s, freq, navg=DEFAULT_NAVG):
         scope.write(":CDISplay")        # clear display -> restart the running average
         time.sleep(refill_s)            # let it refill with new-setpoint data only
 
-        resp = scope.measure_vpp(channel=SIGNAL_CHANNEL)
+        resp = scope.measure_vmax(channel=SIGNAL_CHANNEL)
 
         vpp_arr.append(float(vpp))
         resp_arr.append(float(resp))
-        print("  Vpp = %5.2f V  ->  CH1 Vpp = %8.2f mV" % (vpp, resp * 1e3))
+        print("  Vpp = %5.2f V  ->  CH1 Vmax = %8.2f mV" % (vpp, resp * 1e3))
 
         err = awg.get_error()
         if err:
@@ -237,8 +240,8 @@ def plot(x, y, popt, out_path, show=True):
         )
 
     ax.set_xlabel("Drive Vpp (V)")
-    ax.set_ylabel("Laser response Vpp (mV)")
-    ax.set_title("AOM performance: laser response vs. drive Vpp")
+    ax.set_ylabel("Laser max voltage (mV)")
+    ax.set_title("AOM performance: laser max voltage vs. drive Vpp")
     ax.grid(True, alpha=0.3)
     ax.legend()
     fig.tight_layout()
@@ -276,6 +279,15 @@ def parse_args(argv=None):
                    help="CH1 (photodiode) input impedance.")
     p.add_argument("--signal-scale", type=float, default=DEFAULT_SIGNAL_SCALE,
                    help="CH1 vertical scale in V/div.")
+    p.add_argument("--trig-vpp", type=float, default=DEFAULT_TRIG_VPP,
+                   help="Rigol CH2 trigger square swing 0..VPP in volts.")
+    p.add_argument("--trig-level", type=float, default=DEFAULT_TRIG_LEVEL,
+                   help="Scope CH2 trigger level in volts.")
+    p.add_argument("--trigger-imp", default=DEFAULT_TRIGGER_IMP,
+                   choices=["FIFTy", "ONEMeg"],
+                   help="Scope CH2 (trigger) input impedance.")
+    p.add_argument("--trigger-scale", type=float, default=DEFAULT_TRIGGER_SCALE,
+                   help="Scope CH2 vertical scale in V/div.")
     p.add_argument("--out", default=DEFAULT_OUT, help="Output PNG path.")
     p.add_argument("--no-show", action="store_true",
                    help="Do not open an interactive plot window (headless runs).")
@@ -300,7 +312,9 @@ def main(argv=None):
                          vmin=args.vmin, vmax=args.vmax)
     try:
         configure(awg, scope, args.freq, vpp_list[0],
-                  signal_imp=args.signal_imp, signal_scale=args.signal_scale)
+                  signal_imp=args.signal_imp, signal_scale=args.signal_scale,
+                  trig_vpp=args.trig_vpp, trig_level=args.trig_level,
+                  trigger_imp=args.trigger_imp, trigger_scale=args.trigger_scale)
         x, y = sweep(awg, scope, vpp_list, args.settle, args.freq, navg=DEFAULT_NAVG)
         popt = fit_sigmoid(x, y)
         plot(x, y, popt, args.out, show=not args.no_show)
