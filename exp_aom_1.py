@@ -62,6 +62,18 @@ SIGNAL_CHANNEL = 1                    # scope channel = photodiode (laser)
 # ────────────────────────────────────────────────────────────────────────────
 
 
+def set_drive_vpp(awg, vpp):
+    """Set the drive square wave to amplitude=Vpp with offset=Vpp/2.
+
+    That offset puts the low level at 0 V and the high level at Vpp (a 0->Vpp
+    unipolar square). Written directly via SCPI so we bypass set_amplitude(),
+    which would re-enable the +/-0.354 V output limit and clamp Vpp.
+    """
+    amp = float(vpp)
+    awg.gpib_write("SOUR%d:VOLT %.3f" % (DRIVE_CH, amp))   # peak-to-peak amplitude
+    awg.set_dc(DRIVE_CH, amp / 2.0)                         # offset = Vpp/2
+
+
 def connect(dg_visa, scope_visa, scope_timeout):
     """Open both instruments and verify the connection actually succeeded.
 
@@ -93,7 +105,7 @@ def configure(awg, scope, freq, first_vpp,
     # sweep(); here we just establish the waveform shape, frequency and output.
     awg.set_func(DRIVE_CH, "SQU")
     awg.set_freq(DRIVE_CH, freq)
-    awg.set_amplitude_wfm(DRIVE_CH, 0.0, float(first_vpp))  # start at first setpoint
+    set_drive_vpp(awg, first_vpp)   # amplitude=Vpp, offset=Vpp/2 -> 0..Vpp
     awg.set_output(1)
     err = awg.get_error()
     if err:
@@ -142,9 +154,8 @@ def sweep(awg, scope, vpp_list, settle_s):
 
     print("\nStarting sweep over %d setpoints..." % len(vpp_list))
     for vpp in vpp_list:
-        # Unipolar square: 0 -> vpp (bypasses the +/-0.354 V limit that
-        # set_amplitude() would enable, letting us reach 3-10 V).
-        awg.set_amplitude_wfm(DRIVE_CH, 0.0, float(vpp))
+        # Square: amplitude=vpp, offset=vpp/2 -> swings 0..vpp.
+        set_drive_vpp(awg, vpp)
         time.sleep(settle_s)
 
         # measure_vpp re-digitizes internally via the scope's measurement system.
