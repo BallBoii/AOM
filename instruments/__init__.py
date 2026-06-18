@@ -27,3 +27,4 @@ from . import Thorlabs
 from . import Toptica
 from . import instr_widget
 from . import Raspberry
+from . import Oscilloscope

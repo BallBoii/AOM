@@ -39,9 +39,14 @@ class DSOX6004A(GPIBdev.GPIBdev):
     VALID_CHANNELS = (1, 2, 3, 4)
 
     def __init__(self, dev, timeout_ms=60000):
-        super().__init__(dev, timeout_ms=timeout_ms)
+        super().__init__(dev)
 
-        # self.name = "DSO-X 6004A"
+        # pyvisa attribute is `timeout` (in ms). Set it after the resource is
+        # open; passing it into open_resource() raises and silently fails to connect.
+        if self.connected:
+            self.inst.timeout = timeout_ms
+
+        self.name = "DSO-X 6004A"
 
         # Conservative software-side limits.
         # Real allowed range depends on probe, impedance, and hardware option.
@@ -308,6 +313,9 @@ class DSOX6004A(GPIBdev.GPIBdev):
 
         self.write(":WAVeform:SOURce CHANnel%d" % source_channel)
         self.write(":WAVeform:FORMat %s" % fmt)
+        # RAW mode is required for the requested point count to be honored
+        # (NORMal caps to the displayed record). Valid while the scope is stopped.
+        self.write(":WAVeform:POINts:MODE RAW")
         self.write(":WAVeform:POINts %d" % int(points))
 
     # ------------------------------------------------------------------
@@ -431,7 +439,7 @@ class DSOX6004A(GPIBdev.GPIBdev):
         payload = payload.replace("\n", " ").replace("\r", " ")
         payload = payload.replace(",", " ")
 
-        y = np.fromstring(payload, sep=" ", dtype=float)
+        y = np.array(payload.split(), dtype=float)
 
         if y.size == 0:
             raise RuntimeError(

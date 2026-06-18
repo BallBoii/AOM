@@ -76,9 +76,9 @@ class DSG836A(GPIBdev.GPIBdev):
 class DG2102(GPIBdev.GPIBdev):
     'Function/Arbitrary Waveform Generator'
 
-    def __init__(self, dev):
+    def __init__(self, dev, timeout=10000):
         super().__init__(dev)
-        self.inst.timeout = 10000
+        self.inst.timeout = timeout
         self.alias = ''  # alias is pb channel name
 
         # limits of the device
@@ -172,7 +172,7 @@ class DG2102(GPIBdev.GPIBdev):
         if len(wfm_list) != len(reps_list):
             print('error')  # todo
         else:
-            awg.gpib_write('DATA:VOLatile:CLE')
+            self.gpib_write('DATA:VOLatile:CLE')
 
             for seq in range(len(wfm_list)):
                 # <arb name>,<repeat count>,<play control>,<marker mode>,<marker point>
@@ -184,7 +184,7 @@ class DG2102(GPIBdev.GPIBdev):
                 marker_point = 10
 
                 # load waveform into memory
-                awg.gpib_write('MMEM:LOAD:DATA "%s"' % wfm)
+                self.gpib_write('MMEM:LOAD:DATA "%s"' % wfm)
                 seq_cmd += ',"%s",%d,%s,%s,%d' % (wfm, rep_count, play_control, marker_mode, marker_point)
 
             char_count = len(seq_cmd)
