@@ -153,6 +153,7 @@ def configure(awg, scope, freq, first_vpp,
         points=1000,
         acquire_type="AVERage",
         average_count=DEFAULT_NAVG,
+        trigger_sweep="AUTO",   # free-run so VMAX reads don't block on a CH2 edge
     )
     scope.run()
     print("Scope configured. Time range:", scope.ask(":TIMebase:RANGe?"))

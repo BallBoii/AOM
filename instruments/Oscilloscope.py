@@ -338,6 +338,7 @@ class DSOX6004A(GPIBdev.GPIBdev):
         points=1000,
         acquire_type="NORMal",
         average_count=8,
+        trigger_sweep="NORMal",
     ):
         """
         One-call setup for your experiment.
@@ -384,7 +385,7 @@ class DSOX6004A(GPIBdev.GPIBdev):
             source_channel=trigger_channel,
             level=trigger_level,
             slope="POSitive",
-            sweep="NORMal",
+            sweep=trigger_sweep,
             coupling="DC",
         )
 
