@@ -101,6 +101,16 @@ class DG2102(GPIBdev.GPIBdev):
     def set_dc(self, ch, v):
         self.gpib_write('SOUR%d:VOLT:OFFS %.3f' % (ch, v)) #set offset voltage
 
+    def set_duty_cycle(self, ch, duty):
+        # set square wave duty cycle in percent (0-100)
+        if (duty < 0) or (duty > 100):
+            print('Duty Cycle Range Error! Tried to set to %f' % duty)
+        else:
+            self.gpib_write('SOUR%d:FUNC:SQU:DCYC %.3f' % (ch, duty))
+
+    def get_duty_cycle(self, ch):
+        return float(self.gpib_query('SOUR%d:FUNC:SQU:DCYC?' % ch))
+
     def set_amplitude_wfm(self, ch, low, high): #set limit ofthe waveform
         # self.set_limits()
         if low == 0 and high == 0:
@@ -113,6 +123,9 @@ class DG2102(GPIBdev.GPIBdev):
     def set_output(self, b):
         self.gpib_write('OUTP1 %d' % b) #ON or OFF
         self.gpib_write('OUTP2 %d' % b)
+    
+    def set_output_ch(self, ch, b):
+        self.gpib_write('OUTP%d %d' % (ch, b)) #ON or OFF
 
     def set_gated(self, ch, b):
         self.gpib_write('SOUR%d:BURS:STAT %d' % (ch, b)) #ON or OFF (Burst mode = pulse modulation)
