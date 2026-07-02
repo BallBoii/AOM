@@ -286,3 +286,226 @@ class DSG836(GPIBdev.GPIBdev):
 
     def get_iqmod(self):
         return int(self.gpib_query(':IQ:MOD:STAT?'))
+
+    # ── System / utility ────────────────────────────────────────────────
+    def idn(self):
+        return self.gpib_query('*IDN?').strip()
+
+    def reset(self):
+        self.gpib_write('*RST')
+
+    def clear_status(self):
+        self.gpib_write('*CLS')
+
+    def get_error(self):
+        # Reads and clears the error queue, returning all pending messages.
+        err = self.gpib_query(':SYST:ERR?')
+
+        if '+0' in err or '0,' in err.split(',')[0]:
+            return ''
+        else:
+            error_all = ''
+            max_err = 20  # maximum number of errors to read - prevent infinite loop
+            itr = 0
+            while '+0' not in err and itr < max_err:
+                error_all += err
+                err = self.gpib_query(':SYST:ERR?')
+                itr += 1
+            if itr >= max_err:
+                print('More than %d error messages occurred. You are probably doing something stupid...' % max_err)
+            return error_all
+
+    # ── Frequency / level offsets ───────────────────────────────────────
+    def set_freq_offset(self, offs):
+        # frequency offset in Hz (display-only shift)
+        self.gpib_write(':FREQ:OFFS %.6fHz' % offs)
+
+    def get_freq_offset(self):
+        return float(self.gpib_query(':FREQ:OFFS?'))
+
+    def set_pow_offset(self, offs):
+        # level offset in dB (display-only shift)
+        self.gpib_write(':LEV:OFFS %f' % offs)
+
+    def get_pow_offset(self):
+        return float(self.gpib_query(':LEV:OFFS?'))
+
+    # ── Amplitude modulation (AM) ───────────────────────────────────────
+    def set_am(self, b):
+        self.gpib_write(':AM:STAT %d' % b)
+
+    def get_am(self):
+        return int(self.gpib_query(':AM:STAT?'))
+
+    def set_am_depth(self, depth):
+        # modulation depth in percent (0-100)
+        self.gpib_write(':AM:DEPT %f' % depth)
+
+    def get_am_depth(self):
+        return float(self.gpib_query(':AM:DEPT?'))
+
+    def set_am_source(self, src):
+        # src: INT | EXT | INT,EXT
+        self.gpib_write(':AM:SOUR %s' % src)
+
+    def set_am_int_freq(self, freq):
+        # internal modulating frequency in Hz
+        self.gpib_write(':AM:INT:FREQ %.6fHz' % freq)
+
+    def get_am_int_freq(self):
+        return float(self.gpib_query(':AM:INT:FREQ?'))
+
+    def set_am_waveform(self, wfm):
+        # wfm: SINE | SQUare | TRIangle | RAMP
+        self.gpib_write(':AM:INT:FUNC %s' % wfm)
+
+    # ── Frequency modulation (FM) ───────────────────────────────────────
+    def set_fm(self, b):
+        self.gpib_write(':FM:STAT %d' % b)
+
+    def get_fm(self):
+        return int(self.gpib_query(':FM:STAT?'))
+
+    def set_fm_dev(self, dev):
+        # frequency deviation in Hz
+        self.gpib_write(':FM:DEV %.6fHz' % dev)
+
+    def get_fm_dev(self):
+        return float(self.gpib_query(':FM:DEV?'))
+
+    def set_fm_source(self, src):
+        self.gpib_write(':FM:SOUR %s' % src)
+
+    def set_fm_int_freq(self, freq):
+        self.gpib_write(':FM:INT:FREQ %.6fHz' % freq)
+
+    def get_fm_int_freq(self):
+        return float(self.gpib_query(':FM:INT:FREQ?'))
+
+    def set_fm_waveform(self, wfm):
+        self.gpib_write(':FM:INT:FUNC %s' % wfm)
+
+    # ── Phase modulation (PM) ───────────────────────────────────────────
+    def set_pm(self, b):
+        self.gpib_write(':PM:STAT %d' % b)
+
+    def get_pm(self):
+        return int(self.gpib_query(':PM:STAT?'))
+
+    def set_pm_dev(self, dev):
+        # phase deviation in radians
+        self.gpib_write(':PM:DEV %f' % dev)
+
+    def get_pm_dev(self):
+        return float(self.gpib_query(':PM:DEV?'))
+
+    def set_pm_source(self, src):
+        self.gpib_write(':PM:SOUR %s' % src)
+
+    def set_pm_int_freq(self, freq):
+        self.gpib_write(':PM:INT:FREQ %.6fHz' % freq)
+
+    def get_pm_int_freq(self):
+        return float(self.gpib_query(':PM:INT:FREQ?'))
+
+    # ── Pulse modulation (extended) ─────────────────────────────────────
+    def get_pulsemod(self):
+        return int(self.gpib_query(':PULM:STAT?'))
+
+    def set_pulsemod_mode(self, mode):
+        # mode: SINGle | DOUBle
+        self.gpib_write(':PULM:MODE %s' % mode)
+
+    def set_pulse_period(self, period):
+        # pulse period in seconds
+        self.gpib_write(':PULM:PERiod %.9f' % period)
+
+    def get_pulse_period(self):
+        return float(self.gpib_query(':PULM:PERiod?'))
+
+    def set_pulse_width(self, width):
+        # pulse width in seconds
+        self.gpib_write(':PULM:WIDTh %.9f' % width)
+
+    def get_pulse_width(self):
+        return float(self.gpib_query(':PULM:WIDTh?'))
+
+    def set_pulse_polarity(self, pol):
+        # pol: NORMal | INVerted
+        self.gpib_write(':PULM:POL %s' % pol)
+
+    # ── Frequency / level sweep ─────────────────────────────────────────
+    def set_sweep(self, b):
+        # b: 0 = OFF, 1 = sweep enabled (use set_sweep_type to select)
+        self.gpib_write(':SWE:STAT %d' % b)
+
+    def get_sweep(self):
+        return self.gpib_query(':SWE:STAT?').strip()
+
+    def set_sweep_type(self, typ):
+        # typ: FREQuency | LEVel | LEVFRE (level & frequency)
+        self.gpib_write(':SWE:TYPE %s' % typ)
+
+    def set_sweep_mode(self, mode):
+        # mode: SINGle | CONTinuous
+        self.gpib_write(':SWE:MODE %s' % mode)
+
+    def set_sweep_spacing(self, spacing):
+        # spacing: LINear | LOGarithmic
+        self.gpib_write(':SWE:SPAC %s' % spacing)
+
+    def set_sweep_points(self, points):
+        self.gpib_write(':SWE:STEP:POIN %d' % points)
+
+    def set_sweep_dwell(self, dwell):
+        # dwell time per step in seconds
+        self.gpib_write(':SWE:STEP:DWEL %.6f' % dwell)
+
+    def set_sweep_start_freq(self, freq):
+        self.gpib_write(':SWE:STEP:STAR:FREQ %.6fHz' % freq)
+
+    def set_sweep_stop_freq(self, freq):
+        self.gpib_write(':SWE:STEP:STOP:FREQ %.6fHz' % freq)
+
+    def sweep_execute(self):
+        # trigger a single sweep
+        self.gpib_write(':SWE:EXEC')
+
+    # ── Low-frequency (LF) output ───────────────────────────────────────
+    def set_lf(self, b):
+        self.gpib_write(':LFO:STAT %d' % b)
+
+    def get_lf(self):
+        return int(self.gpib_query(':LFO:STAT?'))
+
+    def set_lf_freq(self, freq):
+        self.gpib_write(':LFO:FREQ %.6fHz' % freq)
+
+    def get_lf_freq(self):
+        return float(self.gpib_query(':LFO:FREQ?'))
+
+    def set_lf_level(self, level):
+        # LF output level in volts
+        self.gpib_write(':LFO:LEV %f' % level)
+
+    def get_lf_level(self):
+        return float(self.gpib_query(':LFO:LEV?'))
+
+    def set_lf_waveform(self, wfm):
+        # wfm: SINE | SQUare | TRIangle | RAMP
+        self.gpib_write(':LFO:SHAP %s' % wfm)
+
+    # ── Reference oscillator / clock ────────────────────────────────────
+    def set_ref_source(self, src):
+        # src: INTernal | EXTernal
+        self.gpib_write(':ROSC:SOUR %s' % src)
+
+    def get_ref_source(self):
+        return self.gpib_query(':ROSC:SOUR?').strip()
+
+    def set_ref_ext_freq(self, freq):
+        # expected external reference frequency in Hz
+        self.gpib_write(':ROSC:EXT:FREQ %.6fHz' % freq)
+
+    def get_ref_ext_freq(self):
+        return float(self.gpib_query(':ROSC:EXT:FREQ?'))
